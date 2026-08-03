@@ -4,7 +4,14 @@ from typing import Optional
 
 from sqlmodel import SQLModel
 
-from app.models import ExclusiveChannel, PhotoType, RedemptionStatus
+from app.models import (
+    ExclusiveChannel,
+    MoonGap,
+    PhotoType,
+    PostStraightness,
+    ProofType,
+    RedemptionStatus,
+)
 
 
 class ItemCreate(SQLModel):
@@ -92,3 +99,49 @@ class ValueHistoryRead(SQLModel):
     item_id: int
     value: Decimal
     recorded_at: date
+
+
+class PinConditionSet(SQLModel):
+    moon_gap: MoonGap = MoonGap.none
+    pin_back_original: bool = True
+    post_straightness: PostStraightness = PostStraightness.straight
+    enamel_chip_count: int = 0
+
+
+class PinConditionRead(SQLModel):
+    item_id: int
+    moon_gap: MoonGap
+    pin_back_original: bool
+    post_straightness: PostStraightness
+    enamel_chip_count: int
+
+
+class ProvenanceAnchorCreate(SQLModel):
+    proof_type: ProofType
+    photo_id: int
+
+
+class ProvenanceAnchorRead(SQLModel):
+    id: int
+    item_id: int
+    proof_type: ProofType
+    photo_id: int
+    app_timestamp: datetime
+
+
+class GuestSignedProvenanceCreate(SQLModel):
+    guest_name: str
+    convention_name: str
+    convention_date: date
+    session_type: str
+    witnessed_by_user_id: Optional[int] = None
+
+
+class GuestSignedProvenanceRead(SQLModel):
+    id: int
+    item_id: int
+    guest_name: str
+    convention_name: str
+    convention_date: date
+    session_type: str
+    witnessed_by_user_id: Optional[int]

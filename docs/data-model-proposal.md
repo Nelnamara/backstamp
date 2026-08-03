@@ -2,8 +2,8 @@
 
 # Data Model Proposal — Curate & Acquire
 
-*Staged database schema for Pillars 1–2, built against [SCOPE.md](SCOPE.md). Stage A is
-implemented (see `app/models.py`); B–D are proposed, not yet built.*
+*Staged database schema for Pillars 1–2, built against [SCOPE.md](SCOPE.md). Stages A and B
+are implemented (see `app/models.py`); C–D are proposed, not yet built.*
 
 Stack: **Postgres** (Neon for dev — see root `.env.example`), **SQLModel**, item photos
 stored as files on disk with the path in the database.
@@ -33,17 +33,22 @@ Everything needed to log an item, photograph it, tag it, and track its value ove
 
 Deleting an item cascades to its photos, value history, and tag links.
 
-## Stage B — Curate: condition & provenance (proposed)
+## Stage B — Curate: condition & provenance (implemented)
 
-- **`pin_condition`** — one-to-one with an item, only for pins: moon gap, pin-back/clutch
-  match, post straightness, enamel chip count. Replaces a generic Mint/Good/Poor field.
+- **`pin_condition`** — one-to-one with an item, only for pins: moon gap (none / slight /
+  moderate / wide), pin-back/clutch match, post straightness (straight / bent / replaced),
+  enamel chip count. Replaces a generic Mint/Good/Poor field. `PUT /items/{id}/pin-condition`
+  is an upsert — set it once, update it again later as condition changes (e.g. a chip forms).
 - **`provenance_anchor`** — proof attached at first cataloging (receipt, order
   confirmation, badge photo), app-timestamped. The timestamp has **no edit path, by
-  design** — the point is that *when* a claim was made is harder to fake retroactively
-  than the object itself.
+  design** — there's no update route at all, only create/list/delete — since the point is
+  that *when* a claim was made is harder to fake retroactively than the object itself.
+  `photo_id` must reference a photo already on that same item.
 - **`guest_signed_provenance`** — autographed items: guest name, con, date, session type.
   A `witnessed_by_user_id` column is a placeholder for Connect's optical-transfer
   confirmation, which doesn't have a schema yet.
+
+Deleting an item cascades to its pin condition, provenance anchors, and guest signatures too.
 
 ## Stage C — Curate: community content-ops (proposed, hold after modeling)
 
@@ -86,3 +91,6 @@ off building the actual moderation/editorial tooling until Stage A/B are proven.
    there for when Connect's optical-transfer confirmation ships.
 6. Collection value is a history log, not a single column, to match "worth over time."
 7. Provenance-anchor timestamps have no edit path, on purpose — see Stage B above.
+8. Moon gap and post straightness became proper enums (fixed value sets) rather than the
+   plain free-text strings originally diagrammed — matches how the rest of the schema
+   handles constrained fields, and stops typo'd values from ever reaching the database.
