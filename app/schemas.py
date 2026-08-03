@@ -5,6 +5,7 @@ from typing import Optional
 from sqlmodel import SQLModel
 
 from app.models import (
+    ConditionFloor,
     ExclusiveChannel,
     HallmarkStatus,
     MoonGap,
@@ -12,6 +13,8 @@ from app.models import (
     PostStraightness,
     ProofType,
     RedemptionStatus,
+    WatcherAccessType,
+    WishlistStatus,
 )
 
 
@@ -174,6 +177,71 @@ class SetManifestMemberCreate(SQLModel):
 class SetManifestMemberRead(SQLModel):
     id: int
     set_manifest_id: int
+    name: str
+
+
+class WishlistEntryCreate(SQLModel):
+    user_id: int
+    franchise_id: Optional[int] = None
+    item_type_id: Optional[int] = None
+    variant_spec: dict = {}
+    condition_floor: ConditionFloor = ConditionFloor.any
+    coa_required: bool = False
+    price_ceiling: Optional[Decimal] = None
+    status: WishlistStatus = WishlistStatus.active
+
+
+class WishlistEntryUpdate(SQLModel):
+    franchise_id: Optional[int] = None
+    item_type_id: Optional[int] = None
+    variant_spec: Optional[dict] = None
+    condition_floor: Optional[ConditionFloor] = None
+    coa_required: Optional[bool] = None
+    price_ceiling: Optional[Decimal] = None
+    status: Optional[WishlistStatus] = None
+
+
+class WishlistEntryRead(SQLModel):
+    id: int
+    user_id: int
+    franchise_id: Optional[int]
+    item_type_id: Optional[int]
+    variant_spec: dict
+    condition_floor: ConditionFloor
+    coa_required: bool
+    price_ceiling: Optional[Decimal]
+    status: WishlistStatus
+
+
+class WatcherSourceRead(SQLModel):
+    id: int
+    name: str
+    access_type: WatcherAccessType
+    is_active: bool
+
+
+class WatcherHitCreate(SQLModel):
+    watcher_source_id: int
+    external_listing_url: str
+    listing_price: Optional[Decimal] = None
+
+
+class WatcherHitRead(SQLModel):
+    id: int
+    wishlist_entry_id: int
+    watcher_source_id: int
+    external_listing_url: str
+    listing_price: Optional[Decimal]
+    matched_at: datetime
+    notified: bool
+
+
+class TradeMatchRead(SQLModel):
+    id: int
+    owner_id: int
+    name: str
+    franchise_id: Optional[int]
+    item_type_id: Optional[int]
     name: str
 
 

@@ -2,8 +2,9 @@
 
 # Data Model Proposal — Curate & Acquire
 
-*Staged database schema for Pillars 1–2, built against [SCOPE.md](SCOPE.md). Stages A, B, and
-C are implemented (see `app/models.py`); D is proposed, not yet built.*
+*Staged database schema for Pillars 1–2, built against [SCOPE.md](SCOPE.md). All four stages
+(A–D) are implemented — see `app/models.py`. Screens (the other half of the original backlog
+item) haven't been designed yet — that's a separate pass.*
 
 Stack: **Postgres** (Neon for dev — see root `.env.example`), **SQLModel**, item photos
 stored as files on disk with the path in the database.
@@ -65,21 +66,27 @@ it) — the actual moderation/editorial tooling stays deferred.
   year's BlizzCon pin run), independent of who owns what — lets Acquire notice a missing
   member of a set someone's partway through. Deleting a manifest cascades its members.
 
-## Stage D — Acquire (proposed)
+## Stage D — Acquire (implemented)
 
-- **`wishlist_entry`** — `variant_spec` is a flexible JSON field rather than fixed
+- **`wishlist_entry`** — `variant_spec` is a flexible JSONB field rather than fixed
   columns, since the exact variant taxonomy isn't nailed down yet (SCOPE.md's own example:
-  "only the glow-in-the-dark chase /50, not the base pin"). Plus `condition_floor`,
-  `coa_required`, `price_ceiling`.
+  "only the glow-in-the-dark chase /50, not the base pin"). Plus `condition_floor` (any /
+  loose_acceptable / sealed_mib), `coa_required`, `price_ceiling`, `status` (active / paused
+  / fulfilled).
 - **`watcher_source`** — seeded with the four locked sources (eBay, Craigslist, Blizzard
   Gear Store, Facebook Marketplace). No login/session field anywhere, on purpose — the
   standing rule is that watchers never hold a stored session. Adding a fifth source later
-  (once it clears the legality/ToS review) is a new row, not a code change.
+  (once it clears the legality/ToS review) is a new row, not a code change. Read-only via
+  the API — there's no `POST`, since adding one is a human legality/ToS call, not a normal
+  request.
 - **`watcher_hit`** — one row per match, before/after being checked against the wishlist
-  entry's spec.
-- **No new table for want/have swap-matching** — it's a query ("does anyone else's item
-  have `trade_stock = true` matching my wishlist filters"), not new infrastructure, per
-  SCOPE.md's own reasoning.
+  entry's spec. `POST /wishlist/{id}/hits` is what the (not-yet-built) watcher polling jobs
+  would call once they exist — talking to eBay's API, parsing Craigslist RSS, etc. is its
+  own follow-up, past just the schema.
+- **Want/have swap-matching — no new table.** `GET /wishlist/{id}/matches` queries other
+  users' `trade_stock = true` items filtered by the wishlist entry's franchise/type — using
+  data both sides already store anyway, exactly as SCOPE.md itself reasons this doesn't
+  need new infrastructure.
 
 ## Open calls made during this design pass
 

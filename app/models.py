@@ -3,6 +3,8 @@ from decimal import Decimal
 from enum import Enum
 from typing import Optional
 
+from sqlalchemy import Column
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, SQLModel
 
 
@@ -67,6 +69,24 @@ class HallmarkStatus(str, Enum):
     pending = "pending"
     verified = "verified"
     flagged_fake = "flagged_fake"
+
+
+class ConditionFloor(str, Enum):
+    any = "any"
+    loose_acceptable = "loose_acceptable"
+    sealed_mib = "sealed_mib"
+
+
+class WishlistStatus(str, Enum):
+    active = "active"
+    paused = "paused"
+    fulfilled = "fulfilled"
+
+
+class WatcherAccessType(str, Enum):
+    official_api = "official_api"
+    rss = "rss"
+    public_scrape_no_login = "public_scrape_no_login"
 
 
 class User(SQLModel, table=True):
@@ -234,3 +254,49 @@ class SetManifestMember(SQLModel, table=True):
         foreign_key="set_manifest.id", index=True, ondelete="CASCADE"
     )
     name: str
+
+
+class WishlistEntry(SQLModel, table=True):
+    """variant_spec is a flexible JSONB blob rather than fixed columns —
+    the exact variant taxonomy isn't nailed down yet (SCOPE.md's own
+    example: "only the glow-in-the-dark chase /50, not the base pin")."""
+
+    __tablename__ = "wishlist_entry"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="app_user.id", index=True, ondelete="CASCADE")
+    franchise_id: Optional[int] = Field(default=None, foreign_key="franchise.id")
+    item_type_id: Optional[int] = Field(default=None, foreign_key="item_type.id")
+    variant_spec: dict = Field(default_factory=dict, sa_column=Column(JSONB))
+    condition_floor: ConditionFloor = Field(default=ConditionFloor.any)
+    coa_required: bool = Field(default=False)
+    price_ceiling: Optional[Decimal] = Field(default=None, max_digits=10, decimal_places=2)
+    status: WishlistStatus = Field(default=WishlistStatus.active)
+
+
+class WatcherSource(SQLModel, table=True):
+    """No login/session field anywhere, on purpose — the standing rule is
+    that watchers never hold a stored session. Seeded with the four
+    locked sources; adding a fifth (once it clears legality/ToS review)
+    is a new row, not a code change."""
+
+    __tablename__ = "watcher_source"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(unique=True, index=True)
+    access_type: WatcherAccessType
+    is_active: bool = Field(default=True)
+
+
+class WatcherHit(SQLModel, table=True):
+    __tablename__ = "watcher_hit"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    wishlist_entry_id: int = Field(
+        foreign_key="wishlist_entry.id", index=True, ondelete="CASCADE"
+    )
+    watcher_source_id: int = Field(foreign_key="watcher_source.id")
+    external_listing_url: str
+    listing_price: Optional[Decimal] = Field(default=None, max_digits=10, decimal_places=2)
+    matched_at: datetime = Field(default_factory=utcnow)
+    notified: bool = Field(default=False)
