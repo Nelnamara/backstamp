@@ -63,6 +63,12 @@ class ProofType(str, Enum):
     other = "other"
 
 
+class HallmarkStatus(str, Enum):
+    pending = "pending"
+    verified = "verified"
+    flagged_fake = "flagged_fake"
+
+
 class User(SQLModel, table=True):
     """Ownership + role stub only — signup/invite/login is separate, undesigned work."""
 
@@ -190,3 +196,41 @@ class GuestSignedProvenance(SQLModel, table=True):
     convention_date: date
     session_type: str
     witnessed_by_user_id: Optional[int] = Field(default=None, foreign_key="app_user.id")
+
+
+class HallmarkReference(SQLModel, table=True):
+    """Crowdsourced backstamp/pin-back/plating authentication reference.
+    Status is meant to route through Connect's trust & council review
+    process — that review workflow is deferred tooling, not this table's
+    job; this stage is the table only."""
+
+    __tablename__ = "hallmark_reference"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    franchise_id: Optional[int] = Field(default=None, foreign_key="franchise.id")
+    item_type_id: Optional[int] = Field(default=None, foreign_key="item_type.id")
+    description: str
+    status: HallmarkStatus = Field(default=HallmarkStatus.pending)
+    submitted_by_user_id: int = Field(foreign_key="app_user.id")
+
+
+class SetManifest(SQLModel, table=True):
+    """Editorial series definition (e.g. a given year's BlizzCon pin run),
+    independent of who owns what."""
+
+    __tablename__ = "set_manifest"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    franchise_id: int = Field(foreign_key="franchise.id")
+    is_active: bool = Field(default=True)
+
+
+class SetManifestMember(SQLModel, table=True):
+    __tablename__ = "set_manifest_member"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    set_manifest_id: int = Field(
+        foreign_key="set_manifest.id", index=True, ondelete="CASCADE"
+    )
+    name: str

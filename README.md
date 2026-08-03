@@ -6,9 +6,10 @@ Full scope, locked decisions, and open backlog: see [docs/SCOPE.md](docs/SCOPE.m
 
 ## Status
 
-Stages A and B of the data model are live: the core catalog (items, photos, tags,
-value-over-time) plus pin condition, provenance anchors, and guest-signed autographs, for
-Pillar 1 (Curate), backed by Postgres. See
+Stages A, B, and C of the data model are live for Pillar 1 (Curate), backed by Postgres:
+the core catalog (items, photos, tags, value-over-time), pin condition/provenance
+anchors/guest-signed autographs, and the hallmark-reference + set-manifest tables (schema
+only — no moderation tooling yet, by design). See
 [docs/data-model-proposal.md](docs/data-model-proposal.md) for the full staged plan (A–D)
 this came from. Auth doesn't exist yet — see "Users" below.
 

@@ -2,8 +2,8 @@
 
 # Data Model Proposal — Curate & Acquire
 
-*Staged database schema for Pillars 1–2, built against [SCOPE.md](SCOPE.md). Stages A and B
-are implemented (see `app/models.py`); C–D are proposed, not yet built.*
+*Staged database schema for Pillars 1–2, built against [SCOPE.md](SCOPE.md). Stages A, B, and
+C are implemented (see `app/models.py`); D is proposed, not yet built.*
 
 Stack: **Postgres** (Neon for dev — see root `.env.example`), **SQLModel**, item photos
 stored as files on disk with the path in the database.
@@ -50,18 +50,20 @@ Deleting an item cascades to its photos, value history, and tag links.
 
 Deleting an item cascades to its pin condition, provenance anchors, and guest signatures too.
 
-## Stage C — Curate: community content-ops (proposed, hold after modeling)
+## Stage C — Curate: community content-ops (tables implemented, tooling deliberately not)
 
 Both accepted in SCOPE.md but explicitly flagged there as ongoing curation jobs, not
-one-time builds. Proposal: model the tables so nothing else changes shape later, but hold
-off building the actual moderation/editorial tooling until Stage A/B are proven.
+one-time builds. Built as bare create/list endpoints only — genuinely no update/status-
+transition route exists yet (a test checks for its absence, not just that nothing calls
+it) — the actual moderation/editorial tooling stays deferred.
 
 - **`hallmark_reference`** — crowdsourced backstamp/pin-back/plating authentication
-  reference, with a status routed through the trust & council review process (Connect's
-  job to enforce, not this table's).
+  reference. `status` (pending / verified / flagged_fake) always starts at `pending` —
+  there's no way to change it yet, since that transition is the trust & council review
+  process (Connect's job to build and enforce, not this table's).
 - **`set_manifest` / `set_manifest_member`** — editorial series definitions (e.g. a given
   year's BlizzCon pin run), independent of who owns what — lets Acquire notice a missing
-  member of a set someone's partway through.
+  member of a set someone's partway through. Deleting a manifest cascades its members.
 
 ## Stage D — Acquire (proposed)
 

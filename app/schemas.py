@@ -6,6 +6,7 @@ from sqlmodel import SQLModel
 
 from app.models import (
     ExclusiveChannel,
+    HallmarkStatus,
     MoonGap,
     PhotoType,
     PostStraightness,
@@ -135,6 +136,45 @@ class GuestSignedProvenanceCreate(SQLModel):
     convention_date: date
     session_type: str
     witnessed_by_user_id: Optional[int] = None
+
+
+class HallmarkReferenceCreate(SQLModel):
+    submitted_by_user_id: int
+    description: str
+    franchise_id: Optional[int] = None
+    item_type_id: Optional[int] = None
+
+
+class HallmarkReferenceRead(SQLModel):
+    id: int
+    franchise_id: Optional[int]
+    item_type_id: Optional[int]
+    description: str
+    status: HallmarkStatus
+    submitted_by_user_id: int
+
+
+class SetManifestCreate(SQLModel):
+    name: str
+    franchise_id: int
+    is_active: bool = True
+
+
+class SetManifestRead(SQLModel):
+    id: int
+    name: str
+    franchise_id: int
+    is_active: bool
+
+
+class SetManifestMemberCreate(SQLModel):
+    name: str
+
+
+class SetManifestMemberRead(SQLModel):
+    id: int
+    set_manifest_id: int
+    name: str
 
 
 class GuestSignedProvenanceRead(SQLModel):
