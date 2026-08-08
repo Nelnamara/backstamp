@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
+import ItemDetail from "./ItemDetail.jsx";
+
 const NAV = ["Collection", "Wishlist", "Sets", "Reference", "Dashboard"];
 
 function catalogNumber(id) {
@@ -28,7 +30,7 @@ function photoUrl(filePath) {
   return `/photos/${name}`;
 }
 
-function ItemTile({ item, franchiseName, typeName }) {
+function ItemTile({ item, franchiseName, typeName, onOpen }) {
   const [photo, setPhoto] = useState(null);
 
   useEffect(() => {
@@ -52,7 +54,14 @@ function ItemTile({ item, franchiseName, typeName }) {
   const price = money(item.purchase_price);
 
   return (
-    <article className="tile" tabIndex={0}>
+    <article
+      className="tile"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") onOpen();
+      }}
+    >
       <span className="tile-no">{catalogNumber(item.id)}</span>
       {price && <span className="tile-price">{price}</span>}
       {photo ? (
@@ -82,17 +91,21 @@ export default function App() {
   const [error, setError] = useState(null);
   const [franchiseFilter, setFranchiseFilter] = useState(null);
   const [tradeOnly, setTradeOnly] = useState(false);
+  const [rarities, setRarities] = useState([]);
+  const [openItemId, setOpenItemId] = useState(null);
 
   useEffect(() => {
     Promise.all([
       fetch("/items?limit=500").then((r) => r.json()),
       fetch("/franchises").then((r) => r.json()),
       fetch("/item-types").then((r) => r.json()),
+      fetch("/rarities").then((r) => r.json()),
     ])
-      .then(([itemRows, franchiseRows, typeRows]) => {
+      .then(([itemRows, franchiseRows, typeRows, rarityRows]) => {
         setItems(itemRows);
         setFranchises(franchiseRows);
         setItemTypes(typeRows);
+        setRarities(rarityRows);
       })
       .catch(() => setError("Couldn't reach the Backstamp server — is it running on port 8000?"));
   }, []);
@@ -105,6 +118,10 @@ export default function App() {
     () => Object.fromEntries(itemTypes.map((t) => [t.id, t.name])),
     [itemTypes]
   );
+  const raritiesById = useMemo(
+    () => Object.fromEntries(rarities.map((r) => [r.id, r.name])),
+    [rarities]
+  );
 
   const visible = useMemo(() => {
     if (!items) return [];
@@ -115,6 +132,18 @@ export default function App() {
   }, [items, franchiseFilter, tradeOnly]);
 
   const tradeCount = useMemo(() => (items ?? []).filter((i) => i.trade_stock).length, [items]);
+
+  if (openItemId != null) {
+    return (
+      <ItemDetail
+        itemId={openItemId}
+        franchiseNames={franchiseNames}
+        typeNames={typeNames}
+        raritiesById={raritiesById}
+        onBack={() => setOpenItemId(null)}
+      />
+    );
+  }
 
   return (
     <>
@@ -199,6 +228,7 @@ export default function App() {
                   item={item}
                   franchiseName={franchiseNames[item.franchise_id]}
                   typeName={typeNames[item.item_type_id]}
+                  onOpen={() => setOpenItemId(item.id)}
                 />
               ))}
             </div>
