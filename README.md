@@ -16,17 +16,43 @@ yet either — this is all API only, browsable at `/docs`.
 
 ## Quick start
 
-```
+**Windows (PowerShell):**
+
+```powershell
 python -m venv venv
-source venv/bin/activate      # venv\Scripts\activate on Windows
+venv\Scripts\Activate.ps1
+```
+
+If that second line errors with something like "running scripts is disabled on this
+system," run this once, then retry the line above:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+
+Then continue:
+
+```powershell
 pip install -r requirements.txt
-cp .env.example .env          # then fill in a real Postgres connection string
+Copy-Item .env.example .env
 alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-Then check `http://127.0.0.1:8000/health`, or browse the interactive API docs at
-`http://127.0.0.1:8000/docs`.
+**macOS / Linux / Git Bash:**
+
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+alembic upgrade head
+uvicorn app.main:app --reload
+```
+
+Either way, fill in a real Postgres connection string in `.env` before running
+`alembic upgrade head`. Then check `http://127.0.0.1:8000/health`, or browse the
+interactive API docs at `http://127.0.0.1:8000/docs`.
 
 Run the test suite with `pytest` — it runs against the same database as `DATABASE_URL`,
 inside a transaction that's always rolled back, so it never leaves real rows behind.
