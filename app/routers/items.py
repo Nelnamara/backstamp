@@ -78,6 +78,10 @@ def update_item(item_id: int, payload: ItemUpdate, session: Session = Depends(ge
 @router.delete("/{item_id}", status_code=204)
 def delete_item(item_id: int, session: Session = Depends(get_session)):
     item = _get_item_or_404(item_id, session)
+    # The DB cascade removes photo ROWS, but never touches the files —
+    # without this, every deleted item leaks its photos onto disk forever.
+    for photo in session.exec(select(Photo).where(Photo.item_id == item_id)).all():
+        Path(photo.file_path).unlink(missing_ok=True)
     session.delete(item)
     session.commit()
 

@@ -1,5 +1,7 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
+from app.photos import storage_dir
 from app.routers import acquire, content_ops, items, lookups, provenance, users
 
 app = FastAPI(title="Backstamp")
@@ -10,6 +12,10 @@ app.include_router(users.router)
 app.include_router(provenance.router)
 app.include_router(content_ops.router)
 app.include_router(acquire.router)
+
+# Serves the stored photo files (already EXIF/GPS-stripped at upload) so the
+# web UI can render them; storage_dir() creates the folder if it's missing.
+app.mount("/photos", StaticFiles(directory=storage_dir()), name="photos")
 
 
 @app.get("/health")

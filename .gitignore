@@ -9,3 +9,5 @@ venv/
 .idea/
 .vscode/
 storage/
+node_modules/
+web/dist/
