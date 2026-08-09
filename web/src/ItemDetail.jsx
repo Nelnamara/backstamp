@@ -93,7 +93,7 @@ export default function ItemDetail({ itemId, franchiseNames, typeNames, rarities
   return (
     <div className="detail-wrap">
       <div className="back-row">
-        <button className="back-btn" onClick={onBack}>← Collection</button>
+        <button className="back-btn" onClick={onBack}>← Catalog</button>
         <button className="add-btn" disabled title="Editing is a later increment">Edit item</button>
       </div>
       <div className="detail">

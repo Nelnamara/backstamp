@@ -75,7 +75,7 @@ function ReferenceRow({ entry, franchiseNames, typeNames }) {
   );
 }
 
-export default function SetsReference({ franchises, itemTypes, franchiseNames, typeNames, ownerId, onBack }) {
+export default function SetsReference({ franchises, itemTypes, franchiseNames, typeNames, ownerId }) {
   const [manifests, setManifests] = useState(null);
   const [references, setReferences] = useState(null);
   const [showNewSet, setShowNewSet] = useState(false);
@@ -134,10 +134,6 @@ export default function SetsReference({ franchises, itemTypes, franchiseNames, t
 
   return (
     <div className="detail-wrap">
-      <div className="back-row">
-        <button className="back-btn" onClick={onBack}>← Collection</button>
-      </div>
-
       <section className="intro-note">
         Editorial series definitions and the crowdsourced authenticity reference — both read-mostly
         for now. There's no way yet to mark which of your items fill a set's members, so this lists

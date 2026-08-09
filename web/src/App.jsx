@@ -6,7 +6,7 @@ import ItemDetail from "./ItemDetail.jsx";
 import SetsReference from "./SetsReference.jsx";
 import Wishlist from "./Wishlist.jsx";
 
-const NAV = ["Collection", "Wishlist", "Sets", "Reference", "Dashboard"];
+const PILLARS = ["Curate", "Acquire", "Connect"];
 
 function catalogNumber(id) {
   return `NO. ${String(id).padStart(4, "0")}`;
@@ -95,10 +95,14 @@ export default function App() {
   const [error, setError] = useState(null);
   const [franchiseFilter, setFranchiseFilter] = useState(null);
   const [tradeOnly, setTradeOnly] = useState(false);
+  const [search, setSearch] = useState("");
   const [rarities, setRarities] = useState([]);
   const [openItemId, setOpenItemId] = useState(null);
   const [adding, setAdding] = useState(false);
-  const [view, setView] = useState("collection"); // "collection" | "wishlist"
+  // "dashboard" is the landing screen (a window shade over the three
+  // pillars, not a pillar itself) — "curate" | "curate-sets" | "acquire"
+  // are the pillars themselves. Connect has no view yet — parked in nav.
+  const [view, setView] = useState("dashboard");
 
   // No auth yet (see SCOPE.md — signup/login is separate, undesigned work).
   // Until then: use the one existing user if there is one, or ask for a
@@ -159,11 +163,13 @@ export default function App() {
 
   const visible = useMemo(() => {
     if (!items) return [];
+    const term = search.trim().toLowerCase();
     return items
       .filter((i) => (franchiseFilter == null ? true : i.franchise_id === franchiseFilter))
       .filter((i) => (tradeOnly ? i.trade_stock : true))
+      .filter((i) => (term ? i.name.toLowerCase().includes(term) : true))
       .sort((a, b) => b.id - a.id);
-  }, [items, franchiseFilter, tradeOnly]);
+  }, [items, franchiseFilter, tradeOnly, search]);
 
   const tradeCount = useMemo(() => (items ?? []).filter((i) => i.trade_stock).length, [items]);
 
@@ -175,38 +181,6 @@ export default function App() {
         typeNames={typeNames}
         raritiesById={raritiesById}
         onBack={() => setOpenItemId(null)}
-      />
-    );
-  }
-
-  if (view === "wishlist" && owner) {
-    return (
-      <Wishlist
-        ownerId={owner.id}
-        franchises={franchises}
-        itemTypes={itemTypes}
-        franchiseNames={franchiseNames}
-        typeNames={typeNames}
-        onBack={() => setView("collection")}
-      />
-    );
-  }
-
-  if (view === "dashboard" && owner) {
-    return (
-      <Dashboard ownerId={owner.id} franchiseNames={franchiseNames} onBack={() => setView("collection")} />
-    );
-  }
-
-  if (view === "sets" && owner) {
-    return (
-      <SetsReference
-        ownerId={owner.id}
-        franchises={franchises}
-        itemTypes={itemTypes}
-        franchiseNames={franchiseNames}
-        typeNames={typeNames}
-        onBack={() => setView("collection")}
       />
     );
   }
@@ -228,129 +202,197 @@ export default function App() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="state error">
+        <div className="state-title">The case is dark</div>
+        <p className="state-sub">{error}</p>
+      </div>
+    );
+  }
+
+  if (items === null || owner === undefined) {
+    return (
+      <div className="state">
+        <div className="state-title">Unlocking the case…</div>
+      </div>
+    );
+  }
+
+  if (owner === null) {
+    return (
+      <div className="owner-gate">
+        <div className="state-title">Who's cataloging?</div>
+        <p className="state-sub">
+          There's no login yet — just a name for whose collection this is. One-time, right now.
+        </p>
+        <input
+          value={ownerDraft}
+          onChange={(e) => setOwnerDraft(e.target.value)}
+          placeholder="Your username"
+          onKeyDown={(e) => e.key === "Enter" && createOwner()}
+        />
+        <button className="add-btn" onClick={createOwner} disabled={!ownerDraft.trim()}>
+          Start the collection
+        </button>
+      </div>
+    );
+  }
+
+  const inCurate = view === "curate" || view === "curate-sets";
+
+  let content;
+  if (view === "acquire") {
+    content = (
+      <Wishlist
+        ownerId={owner.id}
+        franchises={franchises}
+        itemTypes={itemTypes}
+        franchiseNames={franchiseNames}
+        typeNames={typeNames}
+      />
+    );
+  } else if (view === "curate-sets") {
+    content = (
+      <SetsReference
+        ownerId={owner.id}
+        franchises={franchises}
+        itemTypes={itemTypes}
+        franchiseNames={franchiseNames}
+        typeNames={typeNames}
+      />
+    );
+  } else if (view === "curate") {
+    content = (
+      <>
+        <div className="chips">
+          <input
+            className="search-input"
+            type="search"
+            placeholder="Search the collection…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <button
+            className={`chip ${franchiseFilter == null && !tradeOnly ? "active" : ""}`}
+            onClick={() => {
+              setFranchiseFilter(null);
+              setTradeOnly(false);
+            }}
+          >
+            All · {items.length}
+          </button>
+          {franchises.map((f) => {
+            const count = items.filter((i) => i.franchise_id === f.id).length;
+            if (count === 0) return null;
+            return (
+              <button
+                key={f.id}
+                className={`chip ${franchiseFilter === f.id ? "active" : ""}`}
+                onClick={() => setFranchiseFilter(franchiseFilter === f.id ? null : f.id)}
+              >
+                {f.name} · {count}
+              </button>
+            );
+          })}
+          {tradeCount > 0 && (
+            <button
+              className={`chip ${tradeOnly ? "active" : ""}`}
+              onClick={() => setTradeOnly(!tradeOnly)}
+            >
+              Trade Stock · {tradeCount}
+            </button>
+          )}
+          <span className="sort-note">SORT: NEWEST</span>
+        </div>
+
+        {visible.length === 0 ? (
+          <div className="state">
+            <div className="state-title">The case is empty</div>
+            <p className="state-sub">
+              {items.length === 0
+                ? "Nothing catalogued yet — “+ Add to collection” above is where that starts."
+                : "No items match this filter."}
+            </p>
+          </div>
+        ) : (
+          <div className="grid">
+            {visible.map((item) => (
+              <ItemTile
+                key={item.id}
+                item={item}
+                franchiseName={franchiseNames[item.franchise_id]}
+                typeName={typeNames[item.item_type_id]}
+                onOpen={() => setOpenItemId(item.id)}
+              />
+            ))}
+          </div>
+        )}
+      </>
+    );
+  } else {
+    content = (
+      <Dashboard
+        ownerId={owner.id}
+        franchiseNames={franchiseNames}
+        onEnterCurate={() => setView("curate")}
+        onEnterAcquire={() => setView("acquire")}
+      />
+    );
+  }
+
   return (
     <>
       <header className="topbar">
-        <span className="wordmark">BACKSTAMP</span>
+        <span className="wordmark" role="button" tabIndex={0} onClick={() => setView("dashboard")}>
+          BACKSTAMP
+        </span>
         <nav className="nav">
-          {NAV.map((label) => {
-            const isWishlist = label === "Wishlist";
-            const isDashboard = label === "Dashboard";
-            const isSets = label === "Sets" || label === "Reference";
-            const clickable = label === "Collection" || isWishlist || isDashboard || isSets;
+          {PILLARS.map((label) => {
+            const target = label === "Curate" ? "curate" : label === "Acquire" ? "acquire" : "connect";
+            const isConnect = label === "Connect";
+            const active = label === "Curate" ? inCurate : view === target;
             return (
               <a
                 key={label}
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
-                  if (isWishlist && owner) setView("wishlist");
-                  if (isDashboard && owner) setView("dashboard");
-                  if (isSets && owner) setView("sets");
+                  if (!isConnect) setView(target);
                 }}
-                className={`nav-link ${clickable ? "" : "disabled"} ${label === "Collection" ? "active" : ""}`}
-                title={clickable ? undefined : "Coming soon"}
+                className={`nav-link ${isConnect ? "disabled" : ""} ${active ? "active" : ""}`}
+                title={isConnect ? "Being scoped — not built yet" : undefined}
               >
                 {label}
               </a>
             );
           })}
         </nav>
-        <button
-          className="add-btn"
-          disabled={!owner}
-          onClick={() => setAdding(true)}
-          title={owner ? undefined : "Name a collector below first"}
-        >
-          + Add to collection
-        </button>
+        {inCurate && (
+          <button className="add-btn" onClick={() => setAdding(true)}>
+            + Add to collection
+          </button>
+        )}
       </header>
 
-      {error ? (
-        <div className="state error">
-          <div className="state-title">The case is dark</div>
-          <p className="state-sub">{error}</p>
-        </div>
-      ) : items === null || owner === undefined ? (
-        <div className="state">
-          <div className="state-title">Unlocking the case…</div>
-        </div>
-      ) : owner === null ? (
-        <div className="owner-gate">
-          <div className="state-title">Who's cataloging?</div>
-          <p className="state-sub">
-            There's no login yet — just a name for whose collection this is. One-time, right now.
-          </p>
-          <input
-            value={ownerDraft}
-            onChange={(e) => setOwnerDraft(e.target.value)}
-            placeholder="Your username"
-            onKeyDown={(e) => e.key === "Enter" && createOwner()}
-          />
-          <button className="add-btn" onClick={createOwner} disabled={!ownerDraft.trim()}>
-            Start the collection
+      {inCurate && (
+        <div className="subnav">
+          <button
+            className={`subnav-link ${view === "curate" ? "active" : ""}`}
+            onClick={() => setView("curate")}
+          >
+            Catalog
+          </button>
+          <button
+            className={`subnav-link ${view === "curate-sets" ? "active" : ""}`}
+            onClick={() => setView("curate-sets")}
+          >
+            Sets & Reference
           </button>
         </div>
-      ) : (
-        <>
-          <div className="chips">
-            <button
-              className={`chip ${franchiseFilter == null && !tradeOnly ? "active" : ""}`}
-              onClick={() => {
-                setFranchiseFilter(null);
-                setTradeOnly(false);
-              }}
-            >
-              All · {items.length}
-            </button>
-            {franchises.map((f) => {
-              const count = items.filter((i) => i.franchise_id === f.id).length;
-              if (count === 0) return null;
-              return (
-                <button
-                  key={f.id}
-                  className={`chip ${franchiseFilter === f.id ? "active" : ""}`}
-                  onClick={() => setFranchiseFilter(franchiseFilter === f.id ? null : f.id)}
-                >
-                  {f.name} · {count}
-                </button>
-              );
-            })}
-            {tradeCount > 0 && (
-              <button
-                className={`chip ${tradeOnly ? "active" : ""}`}
-                onClick={() => setTradeOnly(!tradeOnly)}
-              >
-                Trade Stock · {tradeCount}
-              </button>
-            )}
-            <span className="sort-note">SORT: NEWEST</span>
-          </div>
-
-          {visible.length === 0 ? (
-            <div className="state">
-              <div className="state-title">The case is empty</div>
-              <p className="state-sub">
-                {items.length === 0
-                  ? "Nothing catalogued yet — “+ Add to collection” above is where that starts."
-                  : "No items match this filter."}
-              </p>
-            </div>
-          ) : (
-            <div className="grid">
-              {visible.map((item) => (
-                <ItemTile
-                  key={item.id}
-                  item={item}
-                  franchiseName={franchiseNames[item.franchise_id]}
-                  typeName={typeNames[item.item_type_id]}
-                  onOpen={() => setOpenItemId(item.id)}
-                />
-              ))}
-            </div>
-          )}
-        </>
       )}
+
+      {content}
     </>
   );
 }

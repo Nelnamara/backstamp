@@ -11,7 +11,7 @@ function money(value, opts = {}) {
   });
 }
 
-export default function Dashboard({ ownerId, franchiseNames, onBack }) {
+export default function Dashboard({ ownerId, franchiseNames, onEnterCurate, onEnterAcquire }) {
   const [items, setItems] = useState(null);
   const [historyByItem, setHistoryByItem] = useState({});
 
@@ -59,9 +59,6 @@ export default function Dashboard({ ownerId, franchiseNames, onBack }) {
   if (!stats) {
     return (
       <div className="detail-wrap">
-        <div className="back-row">
-          <button className="back-btn" onClick={onBack}>← Collection</button>
-        </div>
         <div className="state"><div className="state-title">Adding it up…</div></div>
       </div>
     );
@@ -75,10 +72,6 @@ export default function Dashboard({ ownerId, franchiseNames, onBack }) {
 
   return (
     <div className="detail-wrap">
-      <div className="back-row">
-        <button className="back-btn" onClick={onBack}>← Collection</button>
-      </div>
-
       <span className="dash-private">
         🔒 PRIVATE — VISIBLE ONLY TO YOU. NEVER SHARED, NEVER SHOWN AS A REASON TO SELL.
       </span>
@@ -118,6 +111,21 @@ export default function Dashboard({ ownerId, franchiseNames, onBack }) {
         <div className="dash-stat">
           <div className="k">TRADE STOCK</div>
           <div className="v">{stats.tradeStockCount} item{stats.tradeStockCount === 1 ? "" : "s"}</div>
+        </div>
+      </div>
+
+      <div className="pillar-drop">
+        <button className="pillar-card" onClick={onEnterCurate}>
+          <span className="pillar-card-label">Curate</span>
+          <span className="pillar-card-sub">{items.length} item{items.length === 1 ? "" : "s"} catalogued</span>
+        </button>
+        <button className="pillar-card" onClick={onEnterAcquire}>
+          <span className="pillar-card-label">Acquire</span>
+          <span className="pillar-card-sub">Wishlist &amp; watchers</span>
+        </button>
+        <div className="pillar-card parked" title="Being scoped — not built yet">
+          <span className="pillar-card-label">Connect</span>
+          <span className="pillar-card-sub">Coming soon</span>
         </div>
       </div>
     </div>

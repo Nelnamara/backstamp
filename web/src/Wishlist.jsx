@@ -82,7 +82,7 @@ function WishlistSlot({ entry, franchiseNames, typeNames, onDelete }) {
   );
 }
 
-export default function Wishlist({ ownerId, franchises, itemTypes, franchiseNames, typeNames, onBack }) {
+export default function Wishlist({ ownerId, franchises, itemTypes, franchiseNames, typeNames }) {
   const [entries, setEntries] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
@@ -153,8 +153,7 @@ export default function Wishlist({ ownerId, franchises, itemTypes, franchiseName
 
   return (
     <div className="detail-wrap">
-      <div className="back-row">
-        <button className="back-btn" onClick={onBack}>← Collection</button>
+      <div className="back-row" style={{ justifyContent: "flex-end" }}>
         <button className="add-btn" onClick={() => setShowForm((v) => !v)}>
           {showForm ? "Cancel" : "+ Reserve a slot"}
         </button>
