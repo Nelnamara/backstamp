@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import AddItem from "./AddItem.jsx";
+import Dashboard from "./Dashboard.jsx";
 import ItemDetail from "./ItemDetail.jsx";
 import Wishlist from "./Wishlist.jsx";
 
@@ -190,6 +191,12 @@ export default function App() {
     );
   }
 
+  if (view === "dashboard" && owner) {
+    return (
+      <Dashboard ownerId={owner.id} franchiseNames={franchiseNames} onBack={() => setView("collection")} />
+    );
+  }
+
   if (adding && owner) {
     return (
       <AddItem
@@ -214,7 +221,8 @@ export default function App() {
         <nav className="nav">
           {NAV.map((label) => {
             const isWishlist = label === "Wishlist";
-            const clickable = label === "Collection" || isWishlist;
+            const isDashboard = label === "Dashboard";
+            const clickable = label === "Collection" || isWishlist || isDashboard;
             return (
               <a
                 key={label}
@@ -222,6 +230,7 @@ export default function App() {
                 onClick={(e) => {
                   e.preventDefault();
                   if (isWishlist && owner) setView("wishlist");
+                  if (isDashboard && owner) setView("dashboard");
                 }}
                 className={`nav-link ${clickable ? "" : "disabled"} ${label === "Collection" ? "active" : ""}`}
                 title={clickable ? undefined : "Coming soon"}
