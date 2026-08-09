@@ -440,3 +440,49 @@ body {
   margin: 14px 8px 0 0;
   font-family: var(--font-body);
 }
+
+/* ---- Wishlist — reserved slots in the case ---- */
+.wish-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+  max-width: 980px;
+}
+.wish-slot {
+  border: 2px dashed var(--line-brass);
+  border-radius: 6px;
+  padding: 14px;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.wish-remove {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+}
+.wish-sil {
+  height: 56px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  background: radial-gradient(circle at 50% 50%, rgba(184, 145, 74, 0.18) 0%, rgba(184, 145, 74, 0.06) 40%, transparent 44%);
+}
+.wish-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.wish-chip {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  border: 1px solid var(--line-warm);
+  border-radius: 3px;
+  padding: 2px 6px;
+}
+.wish-chip.grail { color: #d98a7b; border-color: #5a2e26; }
+.wish-hit {
+  margin-top: auto;
+  padding-top: 9px;
+  border-top: 1px dashed var(--trade-line);
+  font-size: 10.5px;
+  color: var(--trade);
+}
+.wish-hit.quiet { color: var(--faint); border-top-color: var(--line-warm); }

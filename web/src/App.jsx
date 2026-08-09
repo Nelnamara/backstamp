@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import AddItem from "./AddItem.jsx";
 import ItemDetail from "./ItemDetail.jsx";
+import Wishlist from "./Wishlist.jsx";
 
 const NAV = ["Collection", "Wishlist", "Sets", "Reference", "Dashboard"];
 
@@ -95,6 +96,7 @@ export default function App() {
   const [rarities, setRarities] = useState([]);
   const [openItemId, setOpenItemId] = useState(null);
   const [adding, setAdding] = useState(false);
+  const [view, setView] = useState("collection"); // "collection" | "wishlist"
 
   // No auth yet (see SCOPE.md — signup/login is separate, undesigned work).
   // Until then: use the one existing user if there is one, or ask for a
@@ -175,6 +177,19 @@ export default function App() {
     );
   }
 
+  if (view === "wishlist" && owner) {
+    return (
+      <Wishlist
+        ownerId={owner.id}
+        franchises={franchises}
+        itemTypes={itemTypes}
+        franchiseNames={franchiseNames}
+        typeNames={typeNames}
+        onBack={() => setView("collection")}
+      />
+    );
+  }
+
   if (adding && owner) {
     return (
       <AddItem
@@ -197,17 +212,24 @@ export default function App() {
       <header className="topbar">
         <span className="wordmark">BACKSTAMP</span>
         <nav className="nav">
-          {NAV.map((label) => (
-            <a
-              key={label}
-              href="#"
-              onClick={(e) => e.preventDefault()}
-              className={`nav-link ${label === "Collection" ? "active" : "disabled"}`}
-              title={label === "Collection" ? undefined : "Coming soon"}
-            >
-              {label}
-            </a>
-          ))}
+          {NAV.map((label) => {
+            const isWishlist = label === "Wishlist";
+            const clickable = label === "Collection" || isWishlist;
+            return (
+              <a
+                key={label}
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (isWishlist && owner) setView("wishlist");
+                }}
+                className={`nav-link ${clickable ? "" : "disabled"} ${label === "Collection" ? "active" : ""}`}
+                title={clickable ? undefined : "Coming soon"}
+              >
+                {label}
+              </a>
+            );
+          })}
         </nav>
         <button
           className="add-btn"

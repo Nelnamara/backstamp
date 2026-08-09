@@ -89,6 +89,15 @@ class WatcherAccessType(str, Enum):
     public_scrape_no_login = "public_scrape_no_login"
 
 
+class WishlistPriority(str, Enum):
+    """Collector-vocabulary priority, adopted from the Claude Design pass
+    during the UI merge (2026-08-04). Nullable — most entries carry no tag
+    at all; only Grail/Filler render one."""
+
+    grail = "grail"
+    filler = "filler"
+
+
 class User(SQLModel, table=True):
     """Ownership + role stub only — signup/invite/login is separate, undesigned work."""
 
@@ -265,6 +274,7 @@ class WishlistEntry(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="app_user.id", index=True, ondelete="CASCADE")
+    name: str
     franchise_id: Optional[int] = Field(default=None, foreign_key="franchise.id")
     item_type_id: Optional[int] = Field(default=None, foreign_key="item_type.id")
     variant_spec: dict = Field(default_factory=dict, sa_column=Column(JSONB))
@@ -272,6 +282,7 @@ class WishlistEntry(SQLModel, table=True):
     coa_required: bool = Field(default=False)
     price_ceiling: Optional[Decimal] = Field(default=None, max_digits=10, decimal_places=2)
     status: WishlistStatus = Field(default=WishlistStatus.active)
+    priority: Optional[WishlistPriority] = Field(default=None)
 
 
 class WatcherSource(SQLModel, table=True):

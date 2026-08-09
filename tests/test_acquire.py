@@ -11,20 +11,23 @@ def test_wishlist_entry_create_and_variant_spec(client, test_user):
         "/wishlist",
         json={
             "user_id": test_user.id,
+            "name": "Murloc GITD Chase",
             "variant_spec": {"chase": True, "edition_max": 50, "finish": "glow-in-the-dark"},
             "condition_floor": "sealed_mib",
             "coa_required": True,
             "price_ceiling": "75.00",
+            "priority": "grail",
         },
     )
     assert resp.status_code == 201
     entry = resp.json()
     assert entry["status"] == "active"
     assert entry["variant_spec"]["finish"] == "glow-in-the-dark"
+    assert entry["priority"] == "grail"
 
 
 def test_wishlist_entry_update_and_delete(client, test_user):
-    entry = client.post("/wishlist", json={"user_id": test_user.id}).json()
+    entry = client.post("/wishlist", json={"user_id": test_user.id, "name": "Something"}).json()
 
     updated = client.patch(f"/wishlist/{entry['id']}", json={"status": "paused"})
     assert updated.json()["status"] == "paused"
@@ -41,8 +44,8 @@ def test_wishlist_entry_list_filters_by_user(client, test_user, session):
     session.commit()
     session.refresh(other)
 
-    client.post("/wishlist", json={"user_id": test_user.id})
-    client.post("/wishlist", json={"user_id": other.id})
+    client.post("/wishlist", json={"user_id": test_user.id, "name": "Mine"})
+    client.post("/wishlist", json={"user_id": other.id, "name": "Theirs"})
 
     mine = client.get("/wishlist", params={"user_id": test_user.id}).json()
     assert len(mine) == 1
@@ -50,7 +53,7 @@ def test_wishlist_entry_list_filters_by_user(client, test_user, session):
 
 
 def test_watcher_hit_create_list_and_mark_notified(client, test_user):
-    entry = client.post("/wishlist", json={"user_id": test_user.id}).json()
+    entry = client.post("/wishlist", json={"user_id": test_user.id, "name": "Something"}).json()
     ebay = next(s for s in client.get("/watcher-sources").json() if s["name"] == "eBay")
 
     created = client.post(
@@ -73,7 +76,7 @@ def test_watcher_hit_create_list_and_mark_notified(client, test_user):
 
 
 def test_watcher_hit_rejects_unknown_source(client, test_user):
-    entry = client.post("/wishlist", json={"user_id": test_user.id}).json()
+    entry = client.post("/wishlist", json={"user_id": test_user.id, "name": "Something"}).json()
     resp = client.post(
         f"/wishlist/{entry['id']}/hits",
         json={"watcher_source_id": 999999, "external_listing_url": "https://example.com"},
@@ -115,7 +118,7 @@ def test_trade_matches_excludes_own_items_and_filters_by_franchise(client, test_
     ).json()
 
     entry = client.post(
-        "/wishlist", json={"user_id": test_user.id, "franchise_id": blizzard_id}
+        "/wishlist", json={"user_id": test_user.id, "name": "Any Blizzard trade dupe", "franchise_id": blizzard_id}
     ).json()
 
     match_ids = [m["id"] for m in client.get(f"/wishlist/{entry['id']}/matches").json()]

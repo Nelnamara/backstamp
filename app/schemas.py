@@ -14,6 +14,7 @@ from app.models import (
     ProofType,
     RedemptionStatus,
     WatcherAccessType,
+    WishlistPriority,
     WishlistStatus,
 )
 
@@ -182,6 +183,7 @@ class SetManifestMemberRead(SQLModel):
 
 class WishlistEntryCreate(SQLModel):
     user_id: int
+    name: str
     franchise_id: Optional[int] = None
     item_type_id: Optional[int] = None
     variant_spec: dict = {}
@@ -189,9 +191,11 @@ class WishlistEntryCreate(SQLModel):
     coa_required: bool = False
     price_ceiling: Optional[Decimal] = None
     status: WishlistStatus = WishlistStatus.active
+    priority: Optional[WishlistPriority] = None
 
 
 class WishlistEntryUpdate(SQLModel):
+    name: Optional[str] = None
     franchise_id: Optional[int] = None
     item_type_id: Optional[int] = None
     variant_spec: Optional[dict] = None
@@ -199,11 +203,13 @@ class WishlistEntryUpdate(SQLModel):
     coa_required: Optional[bool] = None
     price_ceiling: Optional[Decimal] = None
     status: Optional[WishlistStatus] = None
+    priority: Optional[WishlistPriority] = None
 
 
 class WishlistEntryRead(SQLModel):
     id: int
     user_id: int
+    name: str
     franchise_id: Optional[int]
     item_type_id: Optional[int]
     variant_spec: dict
@@ -211,6 +217,7 @@ class WishlistEntryRead(SQLModel):
     coa_required: bool
     price_ceiling: Optional[Decimal]
     status: WishlistStatus
+    priority: Optional[WishlistPriority]
 
 
 class WatcherSourceRead(SQLModel):
