@@ -99,15 +99,15 @@ def test_trade_matches_excludes_own_items_and_filters_by_franchise(client, test_
     ).first().id
 
     # My own trade-stock item — should never show up in my own matches.
-    client.post(
+    mine = client.post(
         "/items",
         json={"owner_id": test_user.id, "name": "My own dupe", "franchise_id": blizzard_id, "trade_stock": True},
-    )
+    ).json()
     # Someone else's trade-stock item in a DIFFERENT franchise — shouldn't match.
-    client.post(
+    their_star_trek = client.post(
         "/items",
         json={"owner_id": other.id, "name": "Their Star Trek pin", "franchise_id": star_trek_id, "trade_stock": True},
-    )
+    ).json()
     # Someone else's trade-stock item in the SAME franchise — should match.
     theirs = client.post(
         "/items",
@@ -118,5 +118,11 @@ def test_trade_matches_excludes_own_items_and_filters_by_franchise(client, test_
         "/wishlist", json={"user_id": test_user.id, "franchise_id": blizzard_id}
     ).json()
 
-    matches = client.get(f"/wishlist/{entry['id']}/matches").json()
-    assert [m["id"] for m in matches] == [theirs["id"]]
+    match_ids = [m["id"] for m in client.get(f"/wishlist/{entry['id']}/matches").json()]
+    # Checked by membership, not exact-list equality: this runs against the
+    # real dev database, which may already hold other real trade-stock
+    # Blizzard items (e.g. a demo item) — the test only owns the exclusion
+    # rules, not the full set of what matches.
+    assert theirs["id"] in match_ids
+    assert mine["id"] not in match_ids
+    assert their_star_trek["id"] not in match_ids

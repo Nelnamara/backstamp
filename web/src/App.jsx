@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
+import AddItem from "./AddItem.jsx";
 import ItemDetail from "./ItemDetail.jsx";
 
 const NAV = ["Collection", "Wishlist", "Sets", "Reference", "Dashboard"];
@@ -93,6 +94,22 @@ export default function App() {
   const [tradeOnly, setTradeOnly] = useState(false);
   const [rarities, setRarities] = useState([]);
   const [openItemId, setOpenItemId] = useState(null);
+  const [adding, setAdding] = useState(false);
+
+  // No auth yet (see SCOPE.md — signup/login is separate, undesigned work).
+  // Until then: use the one existing user if there is one, or ask for a
+  // username to create the bare POST /users stopgap record. If somehow
+  // more than one exists, this picks the first — real owner selection is
+  // an auth-flow question, not something to half-build here.
+  const [owner, setOwner] = useState(undefined); // undefined = loading, null = needs creating
+  const [ownerDraft, setOwnerDraft] = useState("");
+
+  function reloadItems() {
+    fetch("/items?limit=500")
+      .then((r) => r.json())
+      .then(setItems)
+      .catch(() => setError("Couldn't reach the Backstamp server — is it running on port 8000?"));
+  }
 
   useEffect(() => {
     Promise.all([
@@ -100,15 +117,28 @@ export default function App() {
       fetch("/franchises").then((r) => r.json()),
       fetch("/item-types").then((r) => r.json()),
       fetch("/rarities").then((r) => r.json()),
+      fetch("/users").then((r) => r.json()),
     ])
-      .then(([itemRows, franchiseRows, typeRows, rarityRows]) => {
+      .then(([itemRows, franchiseRows, typeRows, rarityRows, userRows]) => {
         setItems(itemRows);
         setFranchises(franchiseRows);
         setItemTypes(typeRows);
         setRarities(rarityRows);
+        setOwner(userRows[0] ?? null);
       })
       .catch(() => setError("Couldn't reach the Backstamp server — is it running on port 8000?"));
   }, []);
+
+  function createOwner() {
+    if (!ownerDraft.trim()) return;
+    fetch("/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: ownerDraft.trim() }),
+    })
+      .then((r) => r.json())
+      .then(setOwner);
+  }
 
   const franchiseNames = useMemo(
     () => Object.fromEntries(franchises.map((f) => [f.id, f.name])),
@@ -145,6 +175,23 @@ export default function App() {
     );
   }
 
+  if (adding && owner) {
+    return (
+      <AddItem
+        franchises={franchises}
+        itemTypes={itemTypes}
+        rarities={rarities}
+        ownerId={owner.id}
+        onCancel={() => setAdding(false)}
+        onSaved={(newItemId) => {
+          setAdding(false);
+          reloadItems();
+          setOpenItemId(newItemId);
+        }}
+      />
+    );
+  }
+
   return (
     <>
       <header className="topbar">
@@ -162,7 +209,12 @@ export default function App() {
             </a>
           ))}
         </nav>
-        <button className="add-btn" disabled title="The Add screen is the next increment">
+        <button
+          className="add-btn"
+          disabled={!owner}
+          onClick={() => setAdding(true)}
+          title={owner ? undefined : "Name a collector below first"}
+        >
           + Add to collection
         </button>
       </header>
@@ -172,9 +224,25 @@ export default function App() {
           <div className="state-title">The case is dark</div>
           <p className="state-sub">{error}</p>
         </div>
-      ) : items === null ? (
+      ) : items === null || owner === undefined ? (
         <div className="state">
           <div className="state-title">Unlocking the case…</div>
+        </div>
+      ) : owner === null ? (
+        <div className="owner-gate">
+          <div className="state-title">Who's cataloging?</div>
+          <p className="state-sub">
+            There's no login yet — just a name for whose collection this is. One-time, right now.
+          </p>
+          <input
+            value={ownerDraft}
+            onChange={(e) => setOwnerDraft(e.target.value)}
+            placeholder="Your username"
+            onKeyDown={(e) => e.key === "Enter" && createOwner()}
+          />
+          <button className="add-btn" onClick={createOwner} disabled={!ownerDraft.trim()}>
+            Start the collection
+          </button>
         </div>
       ) : (
         <>
@@ -216,8 +284,9 @@ export default function App() {
             <div className="state">
               <div className="state-title">The case is empty</div>
               <p className="state-sub">
-                Until the Add screen ships, items can be catalogued through the API docs at{" "}
-                <code>http://127.0.0.1:8000/docs</code> — they'll appear here the moment they exist.
+                {items.length === 0
+                  ? "Nothing catalogued yet — “+ Add to collection” above is where that starts."
+                  : "No items match this filter."}
               </p>
             </div>
           ) : (
