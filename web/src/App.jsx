@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import AddItem from "./AddItem.jsx";
 import Dashboard from "./Dashboard.jsx";
 import ItemDetail from "./ItemDetail.jsx";
+import SetsReference from "./SetsReference.jsx";
 import Wishlist from "./Wishlist.jsx";
 
 const NAV = ["Collection", "Wishlist", "Sets", "Reference", "Dashboard"];
@@ -197,6 +198,19 @@ export default function App() {
     );
   }
 
+  if (view === "sets" && owner) {
+    return (
+      <SetsReference
+        ownerId={owner.id}
+        franchises={franchises}
+        itemTypes={itemTypes}
+        franchiseNames={franchiseNames}
+        typeNames={typeNames}
+        onBack={() => setView("collection")}
+      />
+    );
+  }
+
   if (adding && owner) {
     return (
       <AddItem
@@ -222,7 +236,8 @@ export default function App() {
           {NAV.map((label) => {
             const isWishlist = label === "Wishlist";
             const isDashboard = label === "Dashboard";
-            const clickable = label === "Collection" || isWishlist || isDashboard;
+            const isSets = label === "Sets" || label === "Reference";
+            const clickable = label === "Collection" || isWishlist || isDashboard || isSets;
             return (
               <a
                 key={label}
@@ -231,6 +246,7 @@ export default function App() {
                   e.preventDefault();
                   if (isWishlist && owner) setView("wishlist");
                   if (isDashboard && owner) setView("dashboard");
+                  if (isSets && owner) setView("sets");
                 }}
                 className={`nav-link ${clickable ? "" : "disabled"} ${label === "Collection" ? "active" : ""}`}
                 title={clickable ? undefined : "Coming soon"}
