@@ -5,14 +5,18 @@ from typing import Optional
 from sqlmodel import SQLModel
 
 from app.models import (
+    CheckInMethod,
     ConditionFloor,
+    ConnectTier,
     ExclusiveChannel,
     HallmarkStatus,
     MoonGap,
     PhotoType,
     PostStraightness,
+    PostType,
     ProofType,
     RedemptionStatus,
+    ReportStatus,
     WatcherAccessType,
     WishlistPriority,
     WishlistStatus,
@@ -260,3 +264,108 @@ class GuestSignedProvenanceRead(SQLModel):
     convention_date: date
     session_type: str
     witnessed_by_user_id: Optional[int]
+
+
+class ContactCreate(SQLModel):
+    from_user_id: int
+    to_user_id: int
+    tier: ConnectTier = ConnectTier.tier_1
+    expires_at: Optional[datetime] = None
+    promoted: bool = False
+
+
+class ContactRead(SQLModel):
+    from_user_id: int
+    to_user_id: int
+    tier: ConnectTier
+    granted_at: datetime
+    expires_at: Optional[datetime]
+    promoted: bool
+
+
+class ExchangeSessionCreate(SQLModel):
+    initiator_user_id: int
+    counterpart_user_id: int
+
+
+class ExchangeSessionRead(SQLModel):
+    id: int
+    initiator_user_id: int
+    counterpart_user_id: int
+    occurred_at: datetime
+
+
+class ConventionCheckInCreate(SQLModel):
+    user_id: int
+    convention_name: str
+    convention_date: date
+    method: CheckInMethod
+
+
+class ConventionCheckInRead(SQLModel):
+    id: int
+    user_id: int
+    convention_name: str
+    convention_date: date
+    method: CheckInMethod
+    checked_in_at: datetime
+
+
+class TradeRecordCreate(SQLModel):
+    initiator_user_id: int
+    counterpart_user_id: int
+    note: Optional[str] = None
+
+
+class TradeRecordRead(SQLModel):
+    id: int
+    initiator_user_id: int
+    counterpart_user_id: int
+    occurred_at: datetime
+    confirmed_by_counterpart: bool
+    note: Optional[str]
+
+
+class VouchCreate(SQLModel):
+    trade_record_id: int
+    voucher_user_id: int
+    vouched_user_id: int
+
+
+class VouchRead(SQLModel):
+    id: int
+    trade_record_id: int
+    voucher_user_id: int
+    vouched_user_id: int
+    created_at: datetime
+
+
+class ReportCreate(SQLModel):
+    reporter_user_id: int
+    reported_user_id: int
+    reason: str
+
+
+class ReportRead(SQLModel):
+    id: int
+    reporter_user_id: int
+    reported_user_id: int
+    reason: str
+    status: ReportStatus
+    created_at: datetime
+
+
+class CommunityPostCreate(SQLModel):
+    user_id: int
+    post_type: PostType
+    caption: str
+    item_ids: list[int] = []
+
+
+class CommunityPostRead(SQLModel):
+    id: int
+    user_id: int
+    post_type: PostType
+    caption: str
+    created_at: datetime
+    item_ids: list[int]

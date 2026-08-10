@@ -98,6 +98,41 @@ class WishlistPriority(str, Enum):
     filler = "filler"
 
 
+class ConnectTier(str, Enum):
+    """SCOPE.md's locked Pillar 3 tiers: 1=profile/socials/contact info,
+    2=+wishlist, 3=+full collection."""
+
+    tier_1 = "tier_1"
+    tier_2 = "tier_2"
+    tier_3 = "tier_3"
+
+
+class CheckInMethod(str, Enum):
+    geofence = "geofence"
+    manual = "manual"
+
+
+class ReportStatus(str, Enum):
+    """Bare status only — the report-threshold-triggers-flag logic and the
+    council clear/warn/suspend review workflow are deferred moderation
+    tooling, same pattern as hallmark_reference's status field."""
+
+    pending = "pending"
+    soft_flagged = "soft_flagged"
+    resolved = "resolved"
+
+
+class PostType(str, Enum):
+    """Community-page post categories. Showcase is deliberately NOT tied to
+    the formal SetManifest system — a post just groups whichever of a
+    user's own items they choose, sidestepping the set-completion-linking
+    gap flagged during Sets & Reference."""
+
+    showcase = "showcase"
+    trade = "trade"
+    seeking = "seeking"
+
+
 class User(SQLModel, table=True):
     """Ownership + role stub only — signup/invite/login is separate, undesigned work."""
 
@@ -107,6 +142,10 @@ class User(SQLModel, table=True):
     username: str = Field(unique=True, index=True)
     role: UserRole = Field(default=UserRole.member)
     created_at: datetime = Field(default_factory=utcnow)
+    # Privacy default: off. Only affects whether merely checking into the
+    # same convention as another auto-pair user creates a Contact — an
+    # explicit optical-transfer scan always works regardless of this.
+    auto_connect_at_conventions: bool = Field(default=False)
 
 
 class Franchise(SQLModel, table=True):
@@ -311,3 +350,116 @@ class WatcherHit(SQLModel, table=True):
     listing_price: Optional[Decimal] = Field(default=None, max_digits=10, decimal_places=2)
     matched_at: datetime = Field(default_factory=utcnow)
     notified: bool = Field(default=False)
+
+
+class Contact(SQLModel, table=True):
+    """Directional: my grant to you and yours to me are tracked separately,
+    since trust is per-contact and user-driven, not symmetric — one row
+    per direction, re-granting updates it in place. Ephemeral by default:
+    expires_at is always set on creation; `promoted` is the only way a
+    grant survives past that."""
+
+    __tablename__ = "contact"
+
+    from_user_id: int = Field(foreign_key="app_user.id", primary_key=True, ondelete="CASCADE")
+    to_user_id: int = Field(foreign_key="app_user.id", primary_key=True, ondelete="CASCADE")
+    tier: ConnectTier = Field(default=ConnectTier.tier_1)
+    granted_at: datetime = Field(default_factory=utcnow)
+    expires_at: Optional[datetime] = Field(default=None)
+    promoted: bool = Field(default=False)
+
+
+class ExchangeSession(SQLModel, table=True):
+    """Log of an actual optical-transfer scan between two phones — the
+    explicit person-to-person path that always works regardless of either
+    user's auto-pair setting."""
+
+    __tablename__ = "exchange_session"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    initiator_user_id: int = Field(foreign_key="app_user.id", index=True)
+    counterpart_user_id: int = Field(foreign_key="app_user.id", index=True)
+    occurred_at: datetime = Field(default_factory=utcnow)
+
+
+class ConventionCheckIn(SQLModel, table=True):
+    __tablename__ = "convention_check_in"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="app_user.id", index=True, ondelete="CASCADE")
+    convention_name: str
+    convention_date: date
+    method: CheckInMethod
+    checked_in_at: datetime = Field(default_factory=utcnow)
+
+
+class TradeRecord(SQLModel, table=True):
+    """A trade only counts as a legitimate vouch anchor once both sides
+    confirm it happened — initiator creates it, counterpart confirms
+    separately, so one person can't fabricate a trade to fake a vouch."""
+
+    __tablename__ = "trade_record"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    initiator_user_id: int = Field(foreign_key="app_user.id", index=True)
+    counterpart_user_id: int = Field(foreign_key="app_user.id", index=True)
+    occurred_at: datetime = Field(default_factory=utcnow)
+    confirmed_by_counterpart: bool = Field(default=False)
+    note: Optional[str] = Field(default=None)
+
+
+class Vouch(SQLModel, table=True):
+    """Attaches to a specific confirmed trade rather than accumulating into
+    a global reputation number, per the locked trust model."""
+
+    __tablename__ = "vouch"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    trade_record_id: int = Field(foreign_key="trade_record.id", index=True, ondelete="CASCADE")
+    voucher_user_id: int = Field(foreign_key="app_user.id", index=True)
+    vouched_user_id: int = Field(foreign_key="app_user.id", index=True)
+    created_at: datetime = Field(default_factory=utcnow)
+
+
+class Report(SQLModel, table=True):
+    """Bare create/list only at this stage — the threshold-triggers-flag
+    logic and full council review workflow are deferred moderation
+    tooling, same pattern as hallmark_reference."""
+
+    __tablename__ = "report"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    reporter_user_id: int = Field(foreign_key="app_user.id", index=True)
+    reported_user_id: int = Field(foreign_key="app_user.id", index=True)
+    reason: str
+    status: ReportStatus = Field(default=ReportStatus.pending)
+    created_at: datetime = Field(default_factory=utcnow)
+
+
+class CommunityPost(SQLModel, table=True):
+    """One shared community page, filterable by post_type. De-indexing the
+    page from search engines is a web-server concern, not a schema field."""
+
+    __tablename__ = "community_post"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="app_user.id", index=True, ondelete="CASCADE")
+    post_type: PostType
+    caption: str
+    created_at: datetime = Field(default_factory=utcnow)
+
+
+class CommunityPostItem(SQLModel, table=True):
+    """Loose reference to items a post is showing off/offering/seeking —
+    deliberately NOT tied to the formal SetManifest system, so Showcase
+    posts don't inherit the set-completion-linking gap flagged during
+    Sets & Reference."""
+
+    __tablename__ = "community_post_item"
+
+    post_id: Optional[int] = Field(
+        default=None, foreign_key="community_post.id", primary_key=True, ondelete="CASCADE"
+    )
+    item_id: Optional[int] = Field(
+        default=None, foreign_key="item.id", primary_key=True, ondelete="CASCADE"
+    )
