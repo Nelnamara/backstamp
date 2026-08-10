@@ -21,7 +21,25 @@ function dateOnly(isoString) {
 
 const PHOTO_LABELS = { item: "ITEM", packaging: "BOX", coa: "COA", condition: "COND", other: "MISC" };
 
-export default function ItemDetail({ itemId, franchiseNames, typeNames, raritiesById, onBack }) {
+const REDEMPTION_OPTIONS = [
+  ["not_applicable", "Not applicable"],
+  ["unredeemed", "Unredeemed"],
+  ["redeemed", "Redeemed"],
+  ["redeemed_elsewhere", "Redeemed elsewhere"],
+  ["orphaned", "Orphaned"],
+];
+
+export default function ItemDetail({
+  itemId,
+  franchises,
+  itemTypes,
+  rarities,
+  franchiseNames,
+  typeNames,
+  raritiesById,
+  onBack,
+  onDeleted,
+}) {
   const [item, setItem] = useState(null);
   const [photos, setPhotos] = useState([]);
   const [activePhoto, setActivePhoto] = useState(null);
@@ -29,9 +47,14 @@ export default function ItemDetail({ itemId, franchiseNames, typeNames, rarities
   const [pinCondition, setPinCondition] = useState(null);
   const [anchors, setAnchors] = useState([]);
   const [signatures, setSignatures] = useState([]);
+  const [tags, setTags] = useState([]);
+  const [tagDraft, setTagDraft] = useState("");
   const [error, setError] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [draft, setDraft] = useState(null);
 
-  useEffect(() => {
+  function load() {
     const optional = (url) => fetch(url).then((r) => (r.ok ? r.json() : null)).catch(() => null);
     Promise.all([
       fetch(`/items/${itemId}`).then((r) => {
@@ -43,19 +66,102 @@ export default function ItemDetail({ itemId, franchiseNames, typeNames, rarities
       optional(`/items/${itemId}/pin-condition`),
       optional(`/items/${itemId}/provenance-anchors`),
       optional(`/items/${itemId}/guest-signatures`),
+      optional(`/items/${itemId}/tags`),
     ])
-      .then(([itemRow, photoRows, valueRows, pin, anchorRows, sigRows]) => {
+      .then(([itemRow, photoRows, valueRows, pin, anchorRows, sigRows, tagRows]) => {
         setItem(itemRow);
         const photoList = photoRows ?? [];
         setPhotos(photoList);
-        setActivePhoto(photoList.find((p) => p.photo_type === "item") ?? photoList[0] ?? null);
+        setActivePhoto((prev) =>
+          photoList.find((p) => p.id === prev?.id) ?? photoList.find((p) => p.photo_type === "item") ?? photoList[0] ?? null
+        );
         setValueHistory(valueRows ?? []);
         setPinCondition(pin);
         setAnchors(anchorRows ?? []);
         setSignatures(sigRows ?? []);
+        setTags(tagRows ?? []);
       })
       .catch(() => setError("This item couldn't be loaded."));
-  }, [itemId]);
+  }
+
+  useEffect(load, [itemId]);
+
+  function startEdit() {
+    setDraft({
+      name: item.name,
+      franchise_id: item.franchise_id ?? "",
+      item_type_id: item.item_type_id ?? "",
+      rarity_id: item.rarity_id ?? "",
+      purchase_price: item.purchase_price ?? "",
+      purchase_date: item.purchase_date ?? "",
+      redemption_status: item.redemption_status,
+      trade_stock: item.trade_stock,
+      edition_number: item.edition_number ?? "",
+      edition_total: item.edition_total ?? "",
+    });
+    setEditing(true);
+  }
+
+  function saveEdit() {
+    setSaving(true);
+    fetch(`/items/${itemId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: draft.name,
+        franchise_id: draft.franchise_id ? Number(draft.franchise_id) : null,
+        item_type_id: draft.item_type_id ? Number(draft.item_type_id) : null,
+        rarity_id: draft.rarity_id ? Number(draft.rarity_id) : null,
+        purchase_price: draft.purchase_price === "" ? null : draft.purchase_price,
+        purchase_date: draft.purchase_date || null,
+        redemption_status: draft.redemption_status,
+        trade_stock: draft.trade_stock,
+        edition_number: draft.edition_number === "" ? null : Number(draft.edition_number),
+        edition_total: draft.edition_total === "" ? null : Number(draft.edition_total),
+      }),
+    })
+      .then((r) => {
+        if (!r.ok) throw new Error();
+        return r.json();
+      })
+      .then((updated) => {
+        setItem(updated);
+        setEditing(false);
+        setSaving(false);
+      })
+      .catch(() => setSaving(false));
+  }
+
+  function deleteItem() {
+    if (!window.confirm(`Delete "${item.name}" from the collection? This can't be undone.`)) return;
+    fetch(`/items/${itemId}`, { method: "DELETE" }).then((r) => {
+      if (r.ok) onDeleted();
+    });
+  }
+
+  function addTag() {
+    const name = tagDraft.trim();
+    if (!name) return;
+    fetch(`/items/${itemId}/tags/${encodeURIComponent(name)}`, { method: "POST" })
+      .then((r) => r.json())
+      .then((updated) => {
+        setTags(updated);
+        setTagDraft("");
+      });
+  }
+
+  function removeTag(name) {
+    fetch(`/items/${itemId}/tags/${encodeURIComponent(name)}`, { method: "DELETE" })
+      .then((r) => r.json())
+      .then(setTags);
+  }
+
+  function removePhoto(photoId) {
+    if (!window.confirm("Remove this photo? This can't be undone.")) return;
+    fetch(`/items/${itemId}/photos/${photoId}`, { method: "DELETE" }).then((r) => {
+      if (r.ok) load();
+    });
+  }
 
   if (error) {
     return (
@@ -94,7 +200,21 @@ export default function ItemDetail({ itemId, franchiseNames, typeNames, rarities
     <div className="detail-wrap">
       <div className="back-row">
         <button className="back-btn" onClick={onBack}>← Catalog</button>
-        <button className="add-btn" disabled title="Editing is a later increment">Edit item</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          {editing ? (
+            <>
+              <button className="back-btn" onClick={() => setEditing(false)} disabled={saving}>Cancel</button>
+              <button className="add-btn" onClick={saveEdit} disabled={saving || !draft.name.trim()}>
+                {saving ? "Saving…" : "Save"}
+              </button>
+            </>
+          ) : (
+            <>
+              <button className="back-btn delete-btn" onClick={deleteItem}>Delete item</button>
+              <button className="add-btn" onClick={startEdit}>Edit item</button>
+            </>
+          )}
+        </div>
       </div>
       <div className="detail">
         <div>
@@ -113,6 +233,16 @@ export default function ItemDetail({ itemId, franchiseNames, typeNames, rarities
                   title={p.photo_type}
                 >
                   <span>{PHOTO_LABELS[p.photo_type] ?? "—"}</span>
+                  <span
+                    className="thumb-remove"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removePhoto(p.id);
+                    }}
+                    title="Remove photo"
+                  >
+                    ×
+                  </span>
                 </button>
               ))}
             </div>
@@ -123,20 +253,135 @@ export default function ItemDetail({ itemId, franchiseNames, typeNames, rarities
           <div className="acc-no">
             {catalogNumber(item.id)} · ACCESSIONED {dateOnly(item.created_at)}
           </div>
-          <h2 className="acc-name">{item.name}</h2>
-          <div className="acc-sub">{specParts || "UNCATALOGED"}</div>
+          {editing ? (
+            <div className="acc-sec edit-form">
+              <input
+                className="finput"
+                value={draft.name}
+                onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                placeholder="Name"
+              />
+              <div className="edit-row">
+                <select
+                  className="finput"
+                  value={draft.franchise_id}
+                  onChange={(e) => setDraft({ ...draft, franchise_id: e.target.value })}
+                >
+                  <option value="">— Franchise —</option>
+                  {franchises.map((f) => (
+                    <option key={f.id} value={f.id}>{f.name}</option>
+                  ))}
+                </select>
+                <select
+                  className="finput"
+                  value={draft.item_type_id}
+                  onChange={(e) => setDraft({ ...draft, item_type_id: e.target.value })}
+                >
+                  <option value="">— Type —</option>
+                  {itemTypes.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+                <select
+                  className="finput"
+                  value={draft.rarity_id}
+                  onChange={(e) => setDraft({ ...draft, rarity_id: e.target.value })}
+                >
+                  <option value="">— Rarity —</option>
+                  {rarities.map((r) => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="edit-row">
+                <input
+                  className="finput"
+                  type="number"
+                  step="0.01"
+                  value={draft.purchase_price}
+                  onChange={(e) => setDraft({ ...draft, purchase_price: e.target.value })}
+                  placeholder="Purchase price"
+                />
+                <input
+                  className="finput"
+                  type="date"
+                  value={draft.purchase_date}
+                  onChange={(e) => setDraft({ ...draft, purchase_date: e.target.value })}
+                />
+              </div>
+              <div className="edit-row">
+                <select
+                  className="finput"
+                  value={draft.redemption_status}
+                  onChange={(e) => setDraft({ ...draft, redemption_status: e.target.value })}
+                >
+                  {REDEMPTION_OPTIONS.map(([v, label]) => (
+                    <option key={v} value={v}>{label}</option>
+                  ))}
+                </select>
+                <label className="edit-check">
+                  <input
+                    type="checkbox"
+                    checked={draft.trade_stock}
+                    onChange={(e) => setDraft({ ...draft, trade_stock: e.target.checked })}
+                  />
+                  Trade stock
+                </label>
+              </div>
+              <div className="edit-row">
+                <input
+                  className="finput"
+                  type="number"
+                  value={draft.edition_number}
+                  onChange={(e) => setDraft({ ...draft, edition_number: e.target.value })}
+                  placeholder="Edition #"
+                />
+                <input
+                  className="finput"
+                  type="number"
+                  value={draft.edition_total}
+                  onChange={(e) => setDraft({ ...draft, edition_total: e.target.value })}
+                  placeholder="Edition total"
+                />
+              </div>
+            </div>
+          ) : (
+            <>
+              <h2 className="acc-name">{item.name}</h2>
+              <div className="acc-sub">{specParts || "UNCATALOGED"}</div>
+
+              <div className="acc-sec">
+                <div className="acc-label">STATUS</div>
+                {item.redemption_status !== "not_applicable" && (
+                  <div className="acc-line">
+                    <span>Redemption code</span>
+                    <span className="v">{item.redemption_status.replaceAll("_", " ").toUpperCase()}</span>
+                  </div>
+                )}
+                <div className="acc-line">
+                  <span>Trade stock</span>
+                  <span className="v">{item.trade_stock ? "YES — SHOWN IN EXCHANGES" : "NO — KEEP"}</span>
+                </div>
+              </div>
+            </>
+          )}
 
           <div className="acc-sec">
-            <div className="acc-label">STATUS</div>
-            {item.redemption_status !== "not_applicable" && (
-              <div className="acc-line">
-                <span>Redemption code</span>
-                <span className="v">{item.redemption_status.replaceAll("_", " ").toUpperCase()}</span>
-              </div>
-            )}
-            <div className="acc-line">
-              <span>Trade stock</span>
-              <span className="v">{item.trade_stock ? "YES — SHOWN IN EXCHANGES" : "NO — KEEP"}</span>
+            <div className="acc-label">TAGS</div>
+            <div className="tag-row">
+              {tags.map((t) => (
+                <span className="tag-chip" key={t}>
+                  {t}
+                  <span className="tag-remove" onClick={() => removeTag(t)}>×</span>
+                </span>
+              ))}
+              <input
+                className="tag-input"
+                value={tagDraft}
+                onChange={(e) => setTagDraft(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addTag()}
+                placeholder="+ add tag"
+              />
             </div>
           </div>
 

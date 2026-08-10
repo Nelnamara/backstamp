@@ -96,6 +96,7 @@ export default function App() {
   const [franchiseFilter, setFranchiseFilter] = useState(null);
   const [tradeOnly, setTradeOnly] = useState(false);
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
   const [rarities, setRarities] = useState([]);
   const [openItemId, setOpenItemId] = useState(null);
   const [adding, setAdding] = useState(false);
@@ -168,8 +169,13 @@ export default function App() {
       .filter((i) => (franchiseFilter == null ? true : i.franchise_id === franchiseFilter))
       .filter((i) => (tradeOnly ? i.trade_stock : true))
       .filter((i) => (term ? i.name.toLowerCase().includes(term) : true))
-      .sort((a, b) => b.id - a.id);
-  }, [items, franchiseFilter, tradeOnly, search]);
+      .sort((a, b) => {
+        if (sortBy === "oldest") return a.id - b.id;
+        if (sortBy === "name") return a.name.localeCompare(b.name);
+        if (sortBy === "value") return (Number(b.purchase_price) || 0) - (Number(a.purchase_price) || 0);
+        return b.id - a.id;
+      });
+  }, [items, franchiseFilter, tradeOnly, search, sortBy]);
 
   const tradeCount = useMemo(() => (items ?? []).filter((i) => i.trade_stock).length, [items]);
 
@@ -177,10 +183,17 @@ export default function App() {
     return (
       <ItemDetail
         itemId={openItemId}
+        franchises={franchises}
+        itemTypes={itemTypes}
+        rarities={rarities}
         franchiseNames={franchiseNames}
         typeNames={typeNames}
         raritiesById={raritiesById}
         onBack={() => setOpenItemId(null)}
+        onDeleted={() => {
+          setOpenItemId(null);
+          reloadItems();
+        }}
       />
     );
   }
@@ -303,7 +316,12 @@ export default function App() {
               Trade Stock · {tradeCount}
             </button>
           )}
-          <span className="sort-note">SORT: NEWEST</span>
+          <select className="sort-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+            <option value="newest">SORT: NEWEST</option>
+            <option value="oldest">SORT: OLDEST</option>
+            <option value="name">SORT: NAME A–Z</option>
+            <option value="value">SORT: VALUE HIGH–LOW</option>
+          </select>
         </div>
 
         {visible.length === 0 ? (
