@@ -99,14 +99,66 @@ class WishlistPriority(str, Enum):
 
 
 class User(SQLModel, table=True):
-    """Ownership + role stub only — signup/invite/login is separate, undesigned work."""
+    """Ownership + role stub. email is nullable because accounts created
+    through the old no-auth POST /users stopgap never collected one —
+    real auth requires it going forward, but existing rows can't be
+    backfilled with a real value."""
 
     __tablename__ = "app_user"
 
     id: Optional[int] = Field(default=None, primary_key=True)
     username: str = Field(unique=True, index=True)
+    email: Optional[str] = Field(default=None, unique=True, index=True)
     role: UserRole = Field(default=UserRole.member)
     created_at: datetime = Field(default_factory=utcnow)
+
+
+class Invite(SQLModel, table=True):
+    """Redeeming one is required to create an account — enforces SCOPE.md's
+    locked invite-only-at-launch rule. created_by_user_id is nullable so a
+    first invite can be minted directly in the DB before anyone's ever
+    logged in through the real flow."""
+
+    __tablename__ = "invite"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    code: str = Field(unique=True, index=True)
+    created_by_user_id: Optional[int] = Field(default=None, foreign_key="app_user.id")
+    redeemed_by_user_id: Optional[int] = Field(default=None, foreign_key="app_user.id")
+    created_at: datetime = Field(default_factory=utcnow)
+    redeemed_at: Optional[datetime] = Field(default=None)
+    expires_at: Optional[datetime] = Field(default=None)
+
+
+class MagicLinkToken(SQLModel, table=True):
+    """Single-use, short-lived. pending_username + invite_code are only set
+    for a signup token (new account); a login token for an existing user
+    leaves both null."""
+
+    __tablename__ = "magic_link_token"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    token: str = Field(unique=True, index=True)
+    email: str = Field(index=True)
+    pending_username: Optional[str] = Field(default=None)
+    invite_code: Optional[str] = Field(default=None)
+    created_at: datetime = Field(default_factory=utcnow)
+    expires_at: datetime
+    consumed_at: Optional[datetime] = Field(default=None)
+
+
+class UserSession(SQLModel, table=True):
+    """Server-side session looked up by the token in an httpOnly cookie —
+    named UserSession, not Session, so it doesn't collide with sqlmodel's
+    own Session type that every router already imports."""
+
+    __tablename__ = "user_session"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    token: str = Field(unique=True, index=True)
+    user_id: int = Field(foreign_key="app_user.id", index=True, ondelete="CASCADE")
+    created_at: datetime = Field(default_factory=utcnow)
+    expires_at: datetime
 
 
 class Franchise(SQLModel, table=True):
