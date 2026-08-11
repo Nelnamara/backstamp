@@ -16,14 +16,18 @@ class UserCreate(SQLModel):
 class UserRead(SQLModel):
     id: int
     username: str
+    email: Optional[str]
     role: UserRole
     auto_connect_at_conventions: bool
 
 
 class UserUpdate(SQLModel):
-    """Only the Connect privacy toggle is editable here — broader profile
-    editing is auth-flow work, not designed yet."""
+    """Only email and the Connect privacy toggle are editable here — the
+    rest of a profile is either auth-flow work or not designed yet.
+    Setting email is what lets a pre-auth account (created via the old
+    POST /users stopgap) start using magic-link login."""
 
+    email: Optional[str] = None
     auto_connect_at_conventions: Optional[bool] = None
 
 

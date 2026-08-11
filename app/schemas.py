@@ -369,3 +369,27 @@ class CommunityPostRead(SQLModel):
     caption: str
     created_at: datetime
     item_ids: list[int]
+
+
+class InviteRead(SQLModel):
+    id: int
+    code: str
+    created_by_user_id: Optional[int]
+    redeemed_by_user_id: Optional[int]
+    created_at: datetime
+    redeemed_at: Optional[datetime]
+    expires_at: Optional[datetime]
+
+
+class LoginRequest(SQLModel):
+    email: str
+
+
+class SignupRequest(SQLModel):
+    email: str
+    username: str
+    invite_code: str
+
+
+class VerifyRequest(SQLModel):
+    token: str
