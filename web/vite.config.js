@@ -16,6 +16,7 @@ const apiPaths = [
   "/hallmark-references",
   "/set-manifests",
   "/photos",
+  "/auth",
 ];
 
 export default defineConfig({

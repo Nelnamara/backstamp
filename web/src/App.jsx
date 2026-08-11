@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import AddItem from "./AddItem.jsx";
 import Dashboard from "./Dashboard.jsx";
 import ItemDetail from "./ItemDetail.jsx";
+import Login from "./Login.jsx";
 import SetsReference from "./SetsReference.jsx";
 import Wishlist from "./Wishlist.jsx";
 
@@ -105,13 +106,11 @@ export default function App() {
   // are the pillars themselves. Connect has no view yet — parked in nav.
   const [view, setView] = useState("dashboard");
 
-  // No auth yet (see SCOPE.md — signup/login is separate, undesigned work).
-  // Until then: use the one existing user if there is one, or ask for a
-  // username to create the bare POST /users stopgap record. If somehow
-  // more than one exists, this picks the first — real owner selection is
-  // an auth-flow question, not something to half-build here.
-  const [owner, setOwner] = useState(undefined); // undefined = loading, null = needs creating
-  const [ownerDraft, setOwnerDraft] = useState("");
+  // me: undefined = still checking session, null = not logged in, object = real
+  // logged-in user. Replaces the old "type a username" stopgap entirely —
+  // that only ever existed because there was no real auth yet.
+  const [me, setMe] = useState(undefined);
+  const [inviteMsg, setInviteMsg] = useState(null);
 
   function reloadItems() {
     fetch("/items?limit=500")
@@ -120,33 +119,63 @@ export default function App() {
       .catch(() => setError("Couldn't reach the Backstamp server — is it running on port 8000?"));
   }
 
+  // On load: if the URL carries a magic-link token (from the emailed
+  // link), complete the login before anything else renders. Otherwise
+  // just check for an existing session cookie.
   useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get("token");
+    if (token) {
+      fetch("/auth/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      })
+        .then((r) => (r.ok ? r.json() : Promise.reject()))
+        .then((user) => {
+          window.history.replaceState({}, "", window.location.pathname);
+          setMe(user);
+        })
+        .catch(() => {
+          window.history.replaceState({}, "", window.location.pathname);
+          setMe(null);
+        });
+    } else {
+      fetch("/auth/me")
+        .then((r) => (r.ok ? r.json() : Promise.reject()))
+        .then(setMe)
+        .catch(() => setMe(null));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!me) return;
     Promise.all([
       fetch("/items?limit=500").then((r) => r.json()),
       fetch("/franchises").then((r) => r.json()),
       fetch("/item-types").then((r) => r.json()),
       fetch("/rarities").then((r) => r.json()),
-      fetch("/users").then((r) => r.json()),
     ])
-      .then(([itemRows, franchiseRows, typeRows, rarityRows, userRows]) => {
+      .then(([itemRows, franchiseRows, typeRows, rarityRows]) => {
         setItems(itemRows);
         setFranchises(franchiseRows);
         setItemTypes(typeRows);
         setRarities(rarityRows);
-        setOwner(userRows[0] ?? null);
       })
       .catch(() => setError("Couldn't reach the Backstamp server — is it running on port 8000?"));
-  }, []);
+  }, [me]);
 
-  function createOwner() {
-    if (!ownerDraft.trim()) return;
-    fetch("/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: ownerDraft.trim() }),
-    })
+  function logout() {
+    fetch("/auth/logout", { method: "POST" }).then(() => {
+      setMe(null);
+      setItems(null);
+      setView("dashboard");
+    });
+  }
+
+  function createInvite() {
+    fetch("/auth/invites", { method: "POST" })
       .then((r) => r.json())
-      .then(setOwner);
+      .then((inv) => setInviteMsg(inv.code));
   }
 
   const franchiseNames = useMemo(
@@ -198,13 +227,13 @@ export default function App() {
     );
   }
 
-  if (adding && owner) {
+  if (adding && me) {
     return (
       <AddItem
         franchises={franchises}
         itemTypes={itemTypes}
         rarities={rarities}
-        ownerId={owner.id}
+        ownerId={me.id}
         onCancel={() => setAdding(false)}
         onSaved={(newItemId) => {
           setAdding(false);
@@ -224,7 +253,7 @@ export default function App() {
     );
   }
 
-  if (items === null || owner === undefined) {
+  if (me === undefined) {
     return (
       <div className="state">
         <div className="state-title">Unlocking the case…</div>
@@ -232,22 +261,14 @@ export default function App() {
     );
   }
 
-  if (owner === null) {
+  if (me === null) {
+    return <Login />;
+  }
+
+  if (items === null) {
     return (
-      <div className="owner-gate">
-        <div className="state-title">Who's cataloging?</div>
-        <p className="state-sub">
-          There's no login yet — just a name for whose collection this is. One-time, right now.
-        </p>
-        <input
-          value={ownerDraft}
-          onChange={(e) => setOwnerDraft(e.target.value)}
-          placeholder="Your username"
-          onKeyDown={(e) => e.key === "Enter" && createOwner()}
-        />
-        <button className="add-btn" onClick={createOwner} disabled={!ownerDraft.trim()}>
-          Start the collection
-        </button>
+      <div className="state">
+        <div className="state-title">Unlocking the case…</div>
       </div>
     );
   }
@@ -258,7 +279,7 @@ export default function App() {
   if (view === "acquire") {
     content = (
       <Wishlist
-        ownerId={owner.id}
+        ownerId={me.id}
         franchises={franchises}
         itemTypes={itemTypes}
         franchiseNames={franchiseNames}
@@ -268,7 +289,7 @@ export default function App() {
   } else if (view === "curate-sets") {
     content = (
       <SetsReference
-        ownerId={owner.id}
+        ownerId={me.id}
         franchises={franchises}
         itemTypes={itemTypes}
         franchiseNames={franchiseNames}
@@ -351,7 +372,7 @@ export default function App() {
   } else {
     content = (
       <Dashboard
-        ownerId={owner.id}
+        ownerId={me.id}
         franchiseNames={franchiseNames}
         onEnterCurate={() => setView("curate")}
         onEnterAcquire={() => setView("acquire")}
@@ -386,12 +407,24 @@ export default function App() {
             );
           })}
         </nav>
-        {inCurate && (
-          <button className="add-btn" onClick={() => setAdding(true)}>
-            + Add to collection
-          </button>
-        )}
+        <div className="header-actions">
+          <span className="who-am-i">{me.username}</span>
+          <button className="back-btn" onClick={createInvite}>+ Invite</button>
+          <button className="back-btn" onClick={logout}>Log out</button>
+          {inCurate && (
+            <button className="add-btn" onClick={() => setAdding(true)}>
+              + Add to collection
+            </button>
+          )}
+        </div>
       </header>
+
+      {inviteMsg && (
+        <div className="invite-banner">
+          Invite code: <strong>{inviteMsg}</strong> — give this to whoever you're inviting.
+          <button className="tag-remove" onClick={() => setInviteMsg(null)} style={{ marginLeft: 10 }}>×</button>
+        </div>
+      )}
 
       {inCurate && (
         <div className="subnav">
