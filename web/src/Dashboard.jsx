@@ -11,7 +11,7 @@ function money(value, opts = {}) {
   });
 }
 
-export default function Dashboard({ ownerId, franchiseNames, onEnterCurate, onEnterAcquire }) {
+export default function Dashboard({ ownerId, franchiseNames, onEnterCurate, onEnterAcquire, onEnterConnect }) {
   const [items, setItems] = useState(null);
   const [historyByItem, setHistoryByItem] = useState({});
 
@@ -123,10 +123,10 @@ export default function Dashboard({ ownerId, franchiseNames, onEnterCurate, onEn
           <span className="pillar-card-label">Acquire</span>
           <span className="pillar-card-sub">Wishlist &amp; watchers</span>
         </button>
-        <div className="pillar-card parked" title="Being scoped — not built yet">
+        <button className="pillar-card" onClick={onEnterConnect}>
           <span className="pillar-card-label">Connect</span>
-          <span className="pillar-card-sub">Coming soon</span>
-        </div>
+          <span className="pillar-card-sub">Contacts, check-ins &amp; community</span>
+        </button>
       </div>
     </div>
   );

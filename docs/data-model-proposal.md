@@ -3,8 +3,10 @@
 # Data Model Proposal — Curate & Acquire
 
 *Staged database schema for Pillars 1–2, built against [SCOPE.md](SCOPE.md). All four stages
-(A–D) are implemented — see `app/models.py`. Screens (the other half of the original backlog
-item) haven't been designed yet — that's a separate pass.*
+(A–D) are implemented — see `app/models.py`. Screens for both pillars are built too — see
+[CHANGELOG.md](../CHANGELOG.md). Connect (Pillar 3) got its own data model in Stage E,
+not covered by this doc — see `app/models.py`'s Contact/ConventionCheckIn/TradeRecord/
+Vouch/Report/CommunityPost tables and the changelog.*
 
 Stack: **Postgres** (Neon for dev — see root `.env.example`), **SQLModel**, item photos
 stored as files on disk with the path in the database.
@@ -47,7 +49,8 @@ Deleting an item cascades to its photos, value history, and tag links.
   `photo_id` must reference a photo already on that same item.
 - **`guest_signed_provenance`** — autographed items: guest name, con, date, session type.
   A `witnessed_by_user_id` column is a placeholder for Connect's optical-transfer
-  confirmation, which doesn't have a schema yet.
+  confirmation — Connect's own tables now exist (Stage E), but the actual optical-transfer
+  scan mechanic still isn't built, so this column is still unwired.
 
 Deleting an item cascades to its pin condition, provenance anchors, and guest signatures too.
 

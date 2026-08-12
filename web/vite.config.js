@@ -17,6 +17,13 @@ const apiPaths = [
   "/set-manifests",
   "/photos",
   "/auth",
+  "/contacts",
+  "/exchange-sessions",
+  "/convention-checkins",
+  "/trade-records",
+  "/vouches",
+  "/reports",
+  "/community-posts",
 ];
 
 export default defineConfig({

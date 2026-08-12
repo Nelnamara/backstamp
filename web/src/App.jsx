@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import AddItem from "./AddItem.jsx";
+import Connect from "./Connect.jsx";
 import Dashboard from "./Dashboard.jsx";
 import ItemDetail from "./ItemDetail.jsx";
 import Login from "./Login.jsx";
@@ -276,7 +277,9 @@ export default function App() {
   const inCurate = view === "curate" || view === "curate-sets";
 
   let content;
-  if (view === "acquire") {
+  if (view === "connect") {
+    content = <Connect me={me} />;
+  } else if (view === "acquire") {
     content = (
       <Wishlist
         ownerId={me.id}
@@ -376,6 +379,7 @@ export default function App() {
         franchiseNames={franchiseNames}
         onEnterCurate={() => setView("curate")}
         onEnterAcquire={() => setView("acquire")}
+        onEnterConnect={() => setView("connect")}
       />
     );
   }
@@ -389,7 +393,6 @@ export default function App() {
         <nav className="nav">
           {PILLARS.map((label) => {
             const target = label === "Curate" ? "curate" : label === "Acquire" ? "acquire" : "connect";
-            const isConnect = label === "Connect";
             const active = label === "Curate" ? inCurate : view === target;
             return (
               <a
@@ -397,10 +400,9 @@ export default function App() {
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
-                  if (!isConnect) setView(target);
+                  setView(target);
                 }}
-                className={`nav-link ${isConnect ? "disabled" : ""} ${active ? "active" : ""}`}
-                title={isConnect ? "Being scoped — not built yet" : undefined}
+                className={`nav-link ${active ? "active" : ""}`}
               >
                 {label}
               </a>
