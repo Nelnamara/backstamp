@@ -26,7 +26,7 @@
 * { box-sizing: border-box; }
 html, body, #root { margin: 0; min-height: 100vh; }
 body {
-  background: var(--case);
+  background: #0b0906;
   color: var(--cream);
   font-family: var(--font-body);
   font-size: 16px;
@@ -34,53 +34,165 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ---- Top bar ---- */
+/* ---- Phone shell: this is a phone app first. On a phone it's full width;
+   on a wider screen it renders as a centered phone-shaped frame so it always
+   reads as the pocket app it is, never a sprawling desktop page. ---- */
+.phone-shell {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--case);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* room for the fixed bottom tab bar */
+  padding-bottom: 72px;
+}
+@media (min-width: 481px) {
+  .phone-shell {
+    border-left: 1px solid var(--line-warm);
+    border-right: 1px solid var(--line-warm);
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.6);
+  }
+}
+.phone-body { flex: 1; }
+
+/* ---- Top bar (slim) ---- */
 .topbar {
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding: 16px 28px;
+  justify-content: space-between;
+  padding: 14px 16px;
   border-bottom: 1px solid var(--line);
+  position: relative;
 }
 .wordmark {
   font-family: var(--font-display);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 600;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.2em;
   color: var(--brass);
+  cursor: pointer;
 }
-.nav { display: flex; gap: 20px; font-size: 13px; color: var(--muted); }
-.nav-link { color: inherit; text-decoration: none; padding-bottom: 4px; }
-.nav-link.active { color: var(--cream); border-bottom: 2px solid var(--brass); }
-.nav-link.disabled { cursor: not-allowed; opacity: 0.55; }
-.add-btn {
-  margin-left: auto;
-  background: linear-gradient(180deg, var(--brass-bright), var(--brass-deep));
-  color: #1a130a;
-  font-weight: 600;
-  font-size: 13px;
+.menu-btn {
+  background: none;
   border: none;
-  border-radius: 4px;
-  padding: 8px 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
-  white-space: nowrap;
+  color: var(--cream-dim);
+  font-size: 22px;
+  line-height: 1;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 6px;
 }
-.add-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.header-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-.header-actions .add-btn { margin-left: 0; }
-.who-am-i {
+.menu-btn:hover { background: var(--panel); }
+.account-menu {
+  position: absolute;
+  top: 48px;
+  right: 12px;
+  z-index: 30;
+  background: var(--panel);
+  border: 1px solid var(--line-brass);
+  border-radius: 8px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+}
+.account-menu-who {
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--faint);
-  letter-spacing: 0.04em;
+  padding: 8px 10px 6px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 4px;
 }
+.account-menu button {
+  background: none;
+  border: none;
+  color: var(--cream-dim);
+  text-align: left;
+  font-size: 14px;
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.account-menu button:hover { background: var(--panel-deep); color: var(--cream); }
+
+/* ---- Bottom tab bar — primary navigation ---- */
+.tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  background: rgba(20, 16, 12, 0.96);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--line-brass);
+  z-index: 40;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.tab {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--faint);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 4px 12px;
+  cursor: pointer;
+}
+.tab-glyph { font-size: 17px; line-height: 1; }
+.tab-label { font-size: 10px; letter-spacing: 0.04em; }
+.tab.active { color: var(--brass-bright); }
+
+/* ---- Floating add button ---- */
+.fab {
+  position: fixed;
+  bottom: 84px;
+  left: 50%;
+  margin-left: 156px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(180deg, var(--brass-bright), var(--brass-deep));
+  color: #1a130a;
+  font-size: 28px;
+  line-height: 1;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  z-index: 45;
+}
+@media (max-width: 480px) {
+  .fab { margin-left: 0; right: 18px; left: auto; }
+}
+
+.add-btn {
+  background: linear-gradient(180deg, var(--brass-bright), var(--brass-deep));
+  color: #1a130a;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  border-radius: 6px;
+  padding: 11px 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.add-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .invite-banner {
-  margin: 0 28px 4px;
+  margin: 8px 16px 0;
   padding: 10px 14px;
   background: var(--panel);
   border: 1px solid var(--line-brass);
-  border-radius: 5px;
+  border-radius: 8px;
   font-size: 13px;
   color: var(--cream-dim);
 }
@@ -138,7 +250,7 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 16px 28px 4px;
+  padding: 14px 16px 4px;
 }
 .chip {
   font-size: 12px;
@@ -169,9 +281,10 @@ body {
   border-radius: 999px;
   color: var(--cream);
   font-family: var(--font-body);
-  font-size: 12px;
-  padding: 6px 14px;
-  min-width: 180px;
+  font-size: 14px;
+  padding: 9px 14px;
+  width: 100%;
+  flex-basis: 100%;
 }
 .search-input::placeholder { color: var(--faint); }
 .search-input:focus { outline: none; border-color: var(--brass); }
@@ -189,8 +302,8 @@ body {
 /* ---- Curate sub-nav (Catalog | Sets & Reference) ---- */
 .subnav {
   display: flex;
-  gap: 16px;
-  padding: 10px 28px 0;
+  gap: 20px;
+  padding: 10px 16px 0;
   border-bottom: 1px solid var(--line);
 }
 .subnav-link {
@@ -207,9 +320,9 @@ body {
 /* ---- Catalog grid ---- */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 14px;
-  padding: 18px 28px 40px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 14px 16px 24px;
 }
 .tile {
   background: linear-gradient(180deg, var(--panel), var(--panel-deep));
@@ -284,7 +397,7 @@ body {
 
 /* ---- States ---- */
 .state {
-  padding: 80px 28px;
+  padding: 64px 20px;
   text-align: center;
 }
 .state-title {
@@ -302,7 +415,7 @@ body {
 .state.error .state-title { color: #d98a7b; }
 
 /* ---- Item detail — the accession card under lamplight ---- */
-.detail-wrap { padding: 18px 28px 48px; }
+.detail-wrap { padding: 16px 16px 24px; }
 .back-row {
   display: flex;
   justify-content: space-between;
@@ -324,12 +437,9 @@ body {
 .delete-btn:hover { border-color: #9e3b2f; color: #e0a89e; }
 .detail {
   display: grid;
-  grid-template-columns: 1.1fr 1fr;
-  gap: 24px;
+  grid-template-columns: 1fr;
+  gap: 18px;
   align-items: start;
-}
-@media (max-width: 860px) {
-  .detail { grid-template-columns: 1fr; }
 }
 .photo-stage {
   border: 1px solid var(--line);
@@ -547,7 +657,7 @@ body {
 }
 .pick-remove:hover { color: #d98a7b; }
 
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
 .field { display: flex; flex-direction: column; gap: 5px; }
 .flabel {
   font-family: var(--font-mono);
@@ -559,9 +669,10 @@ body {
 .finput {
   background: var(--panel);
   border: 1px solid var(--line-warm);
-  border-radius: 4px;
-  padding: 9px 12px;
-  font-size: 13px;
+  border-radius: 6px;
+  padding: 11px 12px;
+  /* 16px min stops iOS Safari from zooming in on focus */
+  font-size: 16px;
   color: var(--cream);
   font-family: var(--font-body);
 }
@@ -593,9 +704,8 @@ body {
 /* ---- Wishlist — reserved slots in the case ---- */
 .wish-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 14px;
-  max-width: 980px;
+  grid-template-columns: 1fr;
+  gap: 12px;
 }
 .wish-slot {
   border: 2px dashed var(--line-brass);
@@ -665,7 +775,6 @@ body {
   border-bottom: 1px solid var(--line-warm);
   padding: 0 4px;
   margin-bottom: 22px;
-  max-width: 640px;
 }
 .dash-dot {
   flex: 1;
@@ -678,9 +787,8 @@ body {
 .dash-dot:hover { opacity: 1; }
 .dash-stat-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  max-width: 640px;
 }
 .dash-stat {
   background: var(--panel);
@@ -700,10 +808,9 @@ body {
 /* ---- Dashboard as landing screen — drop points into the three pillars ---- */
 .pillar-drop {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 14px;
-  max-width: 640px;
-  margin-top: 28px;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 24px;
 }
 .pillar-card {
   background: var(--panel);

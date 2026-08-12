@@ -112,6 +112,7 @@ export default function App() {
   // that only ever existed because there was no real auth yet.
   const [me, setMe] = useState(undefined);
   const [inviteMsg, setInviteMsg] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   function reloadItems() {
     fetch("/items?limit=500")
@@ -384,41 +385,29 @@ export default function App() {
     );
   }
 
+  const TABS = [
+    { key: "dashboard", label: "Home", glyph: "◆", active: view === "dashboard" },
+    { key: "curate", label: "Curate", glyph: "◈", active: inCurate },
+    { key: "acquire", label: "Acquire", glyph: "◎", active: view === "acquire" },
+    { key: "connect", label: "Connect", glyph: "◇", active: view === "connect" },
+  ];
+
   return (
-    <>
+    <div className="phone-shell">
       <header className="topbar">
         <span className="wordmark" role="button" tabIndex={0} onClick={() => setView("dashboard")}>
           BACKSTAMP
         </span>
-        <nav className="nav">
-          {PILLARS.map((label) => {
-            const target = label === "Curate" ? "curate" : label === "Acquire" ? "acquire" : "connect";
-            const active = label === "Curate" ? inCurate : view === target;
-            return (
-              <a
-                key={label}
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setView(target);
-                }}
-                className={`nav-link ${active ? "active" : ""}`}
-              >
-                {label}
-              </a>
-            );
-          })}
-        </nav>
-        <div className="header-actions">
-          <span className="who-am-i">{me.username}</span>
-          <button className="back-btn" onClick={createInvite}>+ Invite</button>
-          <button className="back-btn" onClick={logout}>Log out</button>
-          {inCurate && (
-            <button className="add-btn" onClick={() => setAdding(true)}>
-              + Add to collection
-            </button>
-          )}
-        </div>
+        <button className="menu-btn" onClick={() => setMenuOpen((v) => !v)} aria-label="Account menu">
+          ⋯
+        </button>
+        {menuOpen && (
+          <div className="account-menu">
+            <div className="account-menu-who">{me.username}</div>
+            <button onClick={() => { createInvite(); setMenuOpen(false); }}>+ Create invite</button>
+            <button onClick={() => { logout(); setMenuOpen(false); }}>Log out</button>
+          </div>
+        )}
       </header>
 
       {inviteMsg && (
@@ -445,7 +434,26 @@ export default function App() {
         </div>
       )}
 
-      {content}
-    </>
+      <main className="phone-body">{content}</main>
+
+      {inCurate && (
+        <button className="fab" onClick={() => setAdding(true)} aria-label="Add to collection">
+          +
+        </button>
+      )}
+
+      <nav className="tabbar">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            className={`tab ${t.active ? "active" : ""}`}
+            onClick={() => setView(t.key)}
+          >
+            <span className="tab-glyph">{t.glyph}</span>
+            <span className="tab-label">{t.label}</span>
+          </button>
+        ))}
+      </nav>
+    </div>
   );
 }
