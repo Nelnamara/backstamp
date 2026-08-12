@@ -16,7 +16,7 @@ import secrets
 from datetime import timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
+from fastapi import APIRouter, Cookie, Depends, Header, HTTPException, Response
 from sqlmodel import Session, select
 
 from app.db import get_session
@@ -35,11 +35,18 @@ SESSION_COOKIE = "session"
 def get_current_user(
     session: Session = Depends(get_session),
     session_token: Optional[str] = Cookie(default=None, alias=SESSION_COOKIE),
+    authorization: Optional[str] = Header(default=None),
 ) -> User:
-    if not session_token:
+    # Web sends the session token as an httpOnly cookie; the native app
+    # can't use cookies, so it sends the same token as `Authorization:
+    # Bearer <token>`. Either is accepted — same DB-backed session either way.
+    token = session_token
+    if not token and authorization and authorization.lower().startswith("bearer "):
+        token = authorization[7:].strip()
+    if not token:
         raise HTTPException(401, "Not logged in")
     user_session = session.exec(
-        select(UserSession).where(UserSession.token == session_token)
+        select(UserSession).where(UserSession.token == token)
     ).first()
     if not user_session or user_session.expires_at < utcnow():
         raise HTTPException(401, "Session expired or invalid")
@@ -49,7 +56,9 @@ def get_current_user(
     return user
 
 
-def _issue_session(user: User, session: Session, response: Response) -> None:
+def _issue_session(user: User, session: Session, response: Response) -> str:
+    """Creates a DB session row, sets the web cookie, AND returns the raw
+    token so the native app can store it and send it as a Bearer header."""
     token = secrets.token_urlsafe(32)
     user_session = UserSession(token=token, user_id=user.id, expires_at=utcnow() + SESSION_TTL)
     session.add(user_session)
@@ -62,6 +71,7 @@ def _issue_session(user: User, session: Session, response: Response) -> None:
         secure=False,  # flip to True once this runs behind HTTPS, not localhost
         max_age=int(SESSION_TTL.total_seconds()),
     )
+    return token
 
 
 @router.post("/invites", response_model=InviteRead, status_code=201)
@@ -118,7 +128,7 @@ def request_login(payload: LoginRequest, session: Session = Depends(get_session)
     return {"detail": "Check your email for a sign-in link"}
 
 
-@router.post("/verify", response_model=UserRead)
+@router.post("/verify")
 def verify(
     payload: VerifyRequest, response: Response, session: Session = Depends(get_session)
 ):
@@ -157,8 +167,10 @@ def verify(
     session.add(link_token)
     session.commit()
 
-    _issue_session(user, session, response)
-    return user
+    token = _issue_session(user, session, response)
+    # Web ignores `token` (it uses the cookie); the native app stores it
+    # and sends it as a Bearer header.
+    return {**UserRead.model_validate(user).model_dump(), "token": token}
 
 
 @router.post("/logout", status_code=204)
