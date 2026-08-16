@@ -1,3 +1,4 @@
+import * as SecureStore from "expo-secure-store";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 import { api, setToken } from "./api";
@@ -11,6 +12,8 @@ type User = {
 
 type AuthState = {
   me: User | null;
+  /** true until we've checked secure storage for a saved session */
+  booting: boolean;
   loading: boolean;
   requestLogin: (email: string) => Promise<void>;
   requestSignup: (email: string, username: string, inviteCode: string) => Promise<void>;
@@ -18,11 +21,33 @@ type AuthState = {
   logout: () => Promise<void>;
 };
 
+const TOKEN_KEY = "backstamp.session";
 const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<User | null>(null);
+  const [booting, setBooting] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  // On launch: restore a saved session so you stay logged in across app
+  // restarts. If the token is expired/revoked, /auth/me 401s and we drop it.
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await SecureStore.getItemAsync(TOKEN_KEY);
+        if (saved) {
+          setToken(saved);
+          const user = await api<User>("/auth/me");
+          setMe(user);
+        }
+      } catch {
+        setToken(null);
+        await SecureStore.deleteItemAsync(TOKEN_KEY).catch(() => {});
+      } finally {
+        setBooting(false);
+      }
+    })();
+  }, []);
 
   async function requestLogin(email: string) {
     await api("/auth/login/request", { method: "POST", body: JSON.stringify({ email }) });
@@ -43,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ token: linkToken.trim() }),
       });
       setToken(res.token);
+      await SecureStore.setItemAsync(TOKEN_KEY, res.token);
       const { token, ...user } = res;
       setMe(user);
     } finally {
@@ -55,11 +81,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await api("/auth/logout", { method: "POST" });
     } catch {}
     setToken(null);
+    await SecureStore.deleteItemAsync(TOKEN_KEY).catch(() => {});
     setMe(null);
   }
 
   return (
-    <AuthContext.Provider value={{ me, loading, requestLogin, requestSignup, verify, logout }}>
+    <AuthContext.Provider
+      value={{ me, booting, loading, requestLogin, requestSignup, verify, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

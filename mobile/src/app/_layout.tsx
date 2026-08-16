@@ -1,5 +1,7 @@
+import * as Linking from "expo-linking";
 import { Tabs } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
 import { ActivityIndicator, type ColorValue, Text, View } from "react-native";
 
 import { AuthProvider, useAuth } from "../auth";
@@ -10,10 +12,41 @@ function TabGlyph({ glyph, color }: { glyph: string; color: ColorValue }) {
   return <Text style={{ color, fontSize: 18 }}>{glyph}</Text>;
 }
 
-function RootNav() {
-  const { me, loading } = useAuth();
+/** Pull a magic-link token out of any URL the app was opened with. */
+function tokenFromUrl(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    const { queryParams } = Linking.parse(url);
+    const t = queryParams?.token;
+    return typeof t === "string" && t ? t : null;
+  } catch {
+    return null;
+  }
+}
 
-  if (loading && !me) {
+function RootNav() {
+  const { me, booting, loading, verify } = useAuth();
+
+  // Deep link: tapping the "Open Backstamp & sign in" button in the email
+  // opens backstamp://verify?token=... — catch it (both cold-start and
+  // while already running) and complete sign-in with no copy/paste.
+  useEffect(() => {
+    let cancelled = false;
+    Linking.getInitialURL().then((url) => {
+      const t = tokenFromUrl(url);
+      if (t && !cancelled) verify(t).catch(() => {});
+    });
+    const sub = Linking.addEventListener("url", ({ url }) => {
+      const t = tokenFromUrl(url);
+      if (t) verify(t).catch(() => {});
+    });
+    return () => {
+      cancelled = true;
+      sub.remove();
+    };
+  }, [verify]);
+
+  if (booting || (loading && !me)) {
     return (
       <View style={{ flex: 1, backgroundColor: T.case, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator color={T.brass} />
