@@ -100,6 +100,7 @@ function RootNav() {
       {/* Reached from Curate, not tabs of their own. */}
       <Tabs.Screen name="add-item" options={{ title: "Add to collection", href: null }} />
       <Tabs.Screen name="item/[id]" options={{ title: "Item", href: null }} />
+      <Tabs.Screen name="wishlist-add" options={{ title: "Reserve a slot", href: null }} />
     </Tabs>
   );
 }
