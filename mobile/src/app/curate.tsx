@@ -1,9 +1,10 @@
 import { useCallback, useState } from "react";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import {
   ActivityIndicator,
   FlatList,
   Image,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -69,6 +70,7 @@ function Row({ item, franchise }: { item: Item; franchise?: string }) {
 }
 
 export default function Curate() {
+  const router = useRouter();
   const [items, setItems] = useState<Item[] | null>(null);
   const [franchises, setFranchises] = useState<Record<number, string>>({});
   const [search, setSearch] = useState("");
@@ -104,6 +106,9 @@ export default function Curate() {
           placeholderTextColor={T.faint}
           autoCapitalize="none"
         />
+        <Pressable style={s.addBtn} onPress={() => router.push("/add-item")}>
+          <Text style={s.addBtnText}>+ Add</Text>
+        </Pressable>
       </View>
       {items === null ? (
         <ActivityIndicator color={T.brass} style={{ marginTop: 40 }} />
@@ -126,8 +131,9 @@ export default function Curate() {
 }
 
 const s = StyleSheet.create({
-  searchWrap: { padding: 14, paddingBottom: 4 },
+  searchWrap: { padding: 14, paddingBottom: 4, flexDirection: "row", gap: 10, alignItems: "center" },
   search: {
+    flex: 1,
     backgroundColor: T.panelDeep,
     borderColor: T.lineWarm,
     borderWidth: 1,
@@ -137,6 +143,8 @@ const s = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 16,
   },
+  addBtn: { backgroundColor: T.brass, borderRadius: 999, paddingVertical: 10, paddingHorizontal: 16 },
+  addBtnText: { color: T.ink, fontWeight: "700", fontSize: 14 },
   row: {
     flexDirection: "row",
     gap: 12,

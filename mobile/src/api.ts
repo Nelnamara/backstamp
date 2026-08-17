@@ -22,6 +22,19 @@ let authToken: string | null = null;
 export function setToken(t: string | null) {
   authToken = t;
 }
+export function getToken(): string | null {
+  return authToken;
+}
+
+/** Multipart upload (photos). Sends the Bearer token like api() does; does
+ *  NOT set Content-Type so fetch can add the multipart boundary itself. */
+export async function upload(path: string, form: FormData): Promise<any> {
+  const headers: Record<string, string> = {};
+  if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+  const res = await fetch(`${API_BASE}${path}`, { method: "POST", body: form, headers });
+  if (!res.ok) throw new Error(`Upload failed (${res.status})`);
+  return res.json();
+}
 
 export async function api<T = any>(path: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = { ...(options.headers as any) };
