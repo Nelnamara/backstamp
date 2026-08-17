@@ -97,8 +97,9 @@ function RootNav() {
           tabBarIcon: ({ color }) => <TabGlyph glyph="◇" color={color} />,
         }}
       />
-      {/* Add-item is a full screen reached from Curate, not a tab. */}
+      {/* Reached from Curate, not tabs of their own. */}
       <Tabs.Screen name="add-item" options={{ title: "Add to collection", href: null }} />
+      <Tabs.Screen name="item/[id]" options={{ title: "Item", href: null }} />
     </Tabs>
   );
 }

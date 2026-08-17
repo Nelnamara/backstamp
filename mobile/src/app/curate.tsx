@@ -27,7 +27,7 @@ function catalogNo(id: number) {
   return `NO. ${String(id).padStart(4, "0")}`;
 }
 
-function Row({ item, franchise }: { item: Item; franchise?: string }) {
+function Row({ item, franchise, onOpen }: { item: Item; franchise?: string; onOpen: () => void }) {
   const [photo, setPhoto] = useState<string | null>(null);
   useFocusEffect(
     useCallback(() => {
@@ -50,7 +50,7 @@ function Row({ item, franchise }: { item: Item; franchise?: string }) {
     : null;
 
   return (
-    <View style={s.row}>
+    <Pressable style={s.row} onPress={onOpen}>
       {photo ? (
         <Image source={{ uri: photo }} style={s.thumb} />
       ) : (
@@ -65,7 +65,7 @@ function Row({ item, franchise }: { item: Item; franchise?: string }) {
         {price && <Text style={s.price}>{price}</Text>}
         {item.trade_stock && <Text style={s.trade}>TRADE</Text>}
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -118,7 +118,13 @@ export default function Curate() {
           keyExtractor={(i) => String(i.id)}
           contentContainerStyle={{ padding: 14, paddingBottom: 40 }}
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-          renderItem={({ item }) => <Row item={item} franchise={franchises[item.franchise_id ?? -1]} />}
+          renderItem={({ item }) => (
+            <Row
+              item={item}
+              franchise={franchises[item.franchise_id ?? -1]}
+              onOpen={() => router.push(`/item/${item.id}`)}
+            />
+          )}
           ListEmptyComponent={
             <Text style={s.empty}>
               {items.length === 0 ? "Nothing catalogued yet." : "No items match that search."}
