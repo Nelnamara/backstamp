@@ -283,6 +283,10 @@ export default function Connect() {
             </>
           )}
 
+          <Pressable style={s.linkBtn} onPress={() => router.push("/trades")}>
+            <Text style={s.linkBtnText}>Trades &amp; vouches →</Text>
+          </Pressable>
+
           <Text style={s.label}>YOUR CONTACTS</Text>
           {contacts.length === 0 ? (
             <Text style={s.help}>No contacts yet.</Text>
@@ -425,4 +429,13 @@ const s = StyleSheet.create({
   contactMeta: { color: T.muted, fontSize: 11, marginTop: 2 },
   permanent: { color: T.brassBright, fontSize: 10, letterSpacing: 0.5 },
   ephemeral: { color: T.faint, fontSize: 10, letterSpacing: 0.5 },
+  linkBtn: {
+    marginTop: 20,
+    borderColor: T.lineBrass,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  linkBtnText: { color: T.brassBright, fontSize: 14 },
 });

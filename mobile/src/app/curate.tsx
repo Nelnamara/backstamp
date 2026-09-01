@@ -146,6 +146,9 @@ export default function Curate() {
           placeholderTextColor={T.faint}
           autoCapitalize="none"
         />
+        <Pressable style={s.setsBtn} onPress={() => router.push("/sets")}>
+          <Text style={s.setsBtnText}>Sets</Text>
+        </Pressable>
         <Pressable style={s.addBtn} onPress={() => router.push("/add-item")}>
           <Text style={s.addBtnText}>+ Add</Text>
         </Pressable>
@@ -240,6 +243,8 @@ const s = StyleSheet.create({
   },
   addBtn: { backgroundColor: T.brass, borderRadius: 999, paddingVertical: 10, paddingHorizontal: 16 },
   addBtnText: { color: T.ink, fontWeight: "700", fontSize: 14 },
+  setsBtn: { borderColor: T.lineWarm, borderWidth: 1, borderRadius: 999, paddingVertical: 9, paddingHorizontal: 13 },
+  setsBtnText: { color: T.creamDim, fontSize: 13 },
   row: {
     flexDirection: "row",
     gap: 12,

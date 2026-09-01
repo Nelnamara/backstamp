@@ -104,6 +104,8 @@ function RootNav() {
       <Tabs.Screen name="condition/[id]" options={{ title: "Condition", href: null }} />
       <Tabs.Screen name="provenance/[id]" options={{ title: "Provenance", href: null }} />
       <Tabs.Screen name="post-add" options={{ title: "New post", href: null }} />
+      <Tabs.Screen name="trades" options={{ title: "Trades & vouches", href: null }} />
+      <Tabs.Screen name="sets" options={{ title: "Sets & Reference", href: null }} />
     </Tabs>
   );
 }

@@ -1,7 +1,8 @@
 # Backlog
 
 Ordered. Written 2026-08-16, after the pivot to the native app (`mobile/`).
-Last updated 2026-09-01 — **Tier 1 is complete.** Next up is Tier 2.
+Last updated 2026-09-01 — **Tier 1 complete. Tier 2 complete except #7**
+(the standalone build), which needs an Expo account from the owner.
 
 **The shape of the problem:** the backend has ~69 working, tested endpoints.
 The phone app has 6 screens and touches maybe a fifth of them. Most of what
@@ -46,8 +47,8 @@ Everything here has a finished backend. No design questions open.
 10. ~~**Contacts + trust tiers screens.**~~ **DONE** Grant/promote/expire. Backend done.
 11. ~~**Convention check-in screen.**~~ **DONE** Manual + the notify-my-contacts path.
     Backend done.
-12. **Trade records + vouches.** The trust anchor. Backend done.
-13. **Sets & Reference.** Exists on web, absent on phone.
+12. ~~**Trade records + vouches.**~~ **DONE** The trust anchor. Backend done.
+13. ~~**Sets & Reference.**~~ **DONE** Exists on web, absent on phone.
 
 ## Tier 3 — genuinely unbuilt (needs design, not just screens)
 
