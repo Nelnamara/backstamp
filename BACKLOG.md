@@ -1,6 +1,7 @@
 # Backlog
 
 Ordered. Written 2026-08-16, after the pivot to the native app (`mobile/`).
+Last updated 2026-08-17 — four of Tier 1 are done; see strikethroughs.
 
 **The shape of the problem:** the backend has ~69 working, tested endpoints.
 The phone app has 6 screens and touches maybe a fifth of them. Most of what
@@ -19,17 +20,17 @@ isn't yet something you could hand to another collector.
 
 Everything here has a finished backend. No design questions open.
 
-1. **Item detail screen.** Tap an item → its photos, condition, provenance,
+1. ~~**Item detail screen.**~~ **DONE** (ea9394b) Tap an item → its photos, condition, provenance,
    value history, tags. Edit it. Delete it. *Right now you can add an item
    and then never look at it again — this is the single biggest hole.*
-2. **Multiple photos per item, and removing one.** Item / packaging / COA /
+2. ~~**Multiple photos per item, and removing one.**~~ **DONE** (ea9394b) Item / packaging / COA /
    condition shots, per SCOPE's photo model. Add screen takes exactly one.
-3. **Wishlist: create, edit, delete on the phone.** Currently read-only —
+3. ~~**Wishlist: create, pause, delete on the phone.**~~ **DONE** (bd99dc8) Currently read-only —
    you can see entries made on the web app but can't add one.
 4. **Pin condition + provenance capture.** Moon gap, pin-back, post
    straightness, chips; receipt/badge-photo provenance anchor at intake.
    *These are the fields that make this not a spreadsheet.*
-5. **Log current value.** Append to value history so the dashboard number
+5. ~~**Log current value.**~~ **DONE** (ea9394b) Append to value history so the dashboard number
    means something over time.
 6. **Sort and filter the catalog.** Search exists; franchise/type/trade
    filters and sort do not.
