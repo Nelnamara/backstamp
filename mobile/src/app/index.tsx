@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -9,6 +10,8 @@ import {
   Text,
   View,
 } from "react-native";
+
+import * as Clipboard from "expo-clipboard";
 
 import { api } from "../api";
 import { useAuth } from "../auth";
@@ -27,6 +30,7 @@ export default function Home() {
   const [paid, setPaid] = useState(0);
   const [count, setCount] = useState(0);
   const [tradeCount, setTradeCount] = useState(0);
+  const [invite, setInvite] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!me) return;
@@ -54,6 +58,17 @@ export default function Home() {
       load();
     }, [load])
   );
+
+  async function makeInvite() {
+    try {
+      const inv = await api<{ code: string }>("/auth/invites", { method: "POST" });
+      setInvite(inv.code);
+      await Clipboard.setStringAsync(inv.code).catch(() => {});
+      Alert.alert("Invite created", `Code ${inv.code} — copied to your clipboard. Send it to whoever you're inviting.`);
+    } catch (e: any) {
+      Alert.alert("Couldn't create invite", e.message);
+    }
+  }
 
   const delta = total - paid;
 
@@ -91,9 +106,15 @@ export default function Home() {
 
       <View style={{ marginTop: 32 }}>
         <Text style={s.who}>Signed in as {me?.username}</Text>
-        <Pressable style={s.logout} onPress={logout}>
-          <Text style={s.logoutText}>Log out</Text>
-        </Pressable>
+        {invite && <Text style={s.inviteCode}>Latest invite code: {invite}</Text>}
+        <View style={s.footRow}>
+          <Pressable style={s.logout} onPress={makeInvite}>
+            <Text style={s.logoutText}>+ Create invite</Text>
+          </Pressable>
+          <Pressable style={s.logout} onPress={logout}>
+            <Text style={s.logoutText}>Log out</Text>
+          </Pressable>
+        </View>
       </View>
     </ScrollView>
   );
@@ -109,7 +130,6 @@ const s = StyleSheet.create({
   statV: { color: T.cream, fontSize: 22, fontWeight: "600" },
   who: { color: T.faint, fontSize: 12, marginBottom: 10 },
   logout: {
-    alignSelf: "flex-start",
     borderColor: T.lineWarm,
     borderWidth: 1,
     borderRadius: 8,
@@ -117,4 +137,6 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
   },
   logoutText: { color: T.creamDim, fontSize: 14 },
+  footRow: { flexDirection: "row", gap: 10 },
+  inviteCode: { color: T.brassBright, fontSize: 13, marginBottom: 10 },
 });

@@ -40,11 +40,11 @@ Everything here has a finished backend. No design questions open.
 7. **Standalone build (EAS Build).** Your own icon on the home screen, no
    Expo Go, installable, submittable. *This is the "would I actually ship
    this" bar, and it's a build-config task, not a rewrite.*
-8. **Invite generation on the phone.** Backend done; only the web app can
+8. ~~**Invite generation on the phone.**~~ **DONE** Backend done; only the web app can
    mint invites today.
-9. **Community post creation.** Feed is read-only on the phone.
-10. **Contacts + trust tiers screens.** Grant/promote/expire. Backend done.
-11. **Convention check-in screen.** Manual + the notify-my-contacts path.
+9. ~~**Community post creation.**~~ **DONE** Feed is read-only on the phone.
+10. ~~**Contacts + trust tiers screens.**~~ **DONE** Grant/promote/expire. Backend done.
+11. ~~**Convention check-in screen.**~~ **DONE** Manual + the notify-my-contacts path.
     Backend done.
 12. **Trade records + vouches.** The trust anchor. Backend done.
 13. **Sets & Reference.** Exists on web, absent on phone.

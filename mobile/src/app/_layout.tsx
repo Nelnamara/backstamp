@@ -103,6 +103,7 @@ function RootNav() {
       <Tabs.Screen name="wishlist-add" options={{ title: "Reserve a slot", href: null }} />
       <Tabs.Screen name="condition/[id]" options={{ title: "Condition", href: null }} />
       <Tabs.Screen name="provenance/[id]" options={{ title: "Provenance", href: null }} />
+      <Tabs.Screen name="post-add" options={{ title: "New post", href: null }} />
     </Tabs>
   );
 }
