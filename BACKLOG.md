@@ -1,7 +1,7 @@
 # Backlog
 
 Ordered. Written 2026-08-16, after the pivot to the native app (`mobile/`).
-Last updated 2026-08-17 — four of Tier 1 are done; see strikethroughs.
+Last updated 2026-09-01 — **Tier 1 is complete.** Next up is Tier 2.
 
 **The shape of the problem:** the backend has ~69 working, tested endpoints.
 The phone app has 6 screens and touches maybe a fifth of them. Most of what
@@ -27,12 +27,12 @@ Everything here has a finished backend. No design questions open.
    condition shots, per SCOPE's photo model. Add screen takes exactly one.
 3. ~~**Wishlist: create, pause, delete on the phone.**~~ **DONE** (bd99dc8) Currently read-only —
    you can see entries made on the web app but can't add one.
-4. **Pin condition + provenance capture.** Moon gap, pin-back, post
+4. ~~**Pin condition + provenance capture.**~~ **DONE** Moon gap, pin-back, post
    straightness, chips; receipt/badge-photo provenance anchor at intake.
    *These are the fields that make this not a spreadsheet.*
 5. ~~**Log current value.**~~ **DONE** (ea9394b) Append to value history so the dashboard number
    means something over time.
-6. **Sort and filter the catalog.** Search exists; franchise/type/trade
+6. ~~**Sort and filter the catalog.**~~ **DONE** Search exists; franchise/type/trade
    filters and sort do not.
 
 ## Tier 2 — makes it an app, and multi-person

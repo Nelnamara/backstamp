@@ -101,6 +101,8 @@ function RootNav() {
       <Tabs.Screen name="add-item" options={{ title: "Add to collection", href: null }} />
       <Tabs.Screen name="item/[id]" options={{ title: "Item", href: null }} />
       <Tabs.Screen name="wishlist-add" options={{ title: "Reserve a slot", href: null }} />
+      <Tabs.Screen name="condition/[id]" options={{ title: "Condition", href: null }} />
+      <Tabs.Screen name="provenance/[id]" options={{ title: "Provenance", href: null }} />
     </Tabs>
   );
 }

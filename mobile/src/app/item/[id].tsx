@@ -422,18 +422,25 @@ export default function ItemDetail() {
                 )}
               </View>
 
-              {pin && (
-                <View style={s.sec}>
-                  <Text style={s.secLabel}>CONDITION — PIN</Text>
-                  <Line k="Moon gap" v={pin.moon_gap.toUpperCase()} />
-                  <Line k="Pin back" v={pin.pin_back_original ? "ORIGINAL" : "REPLACED"} />
-                  <Line k="Posts / chips" v={`${pin.post_straightness.toUpperCase()} · ${pin.enamel_chip_count}`} />
-                </View>
-              )}
+              <Pressable style={s.sec} onPress={() => router.push(`/condition/${itemId}`)}>
+                <Text style={s.secLabel}>CONDITION — PIN</Text>
+                {pin ? (
+                  <>
+                    <Line k="Moon gap" v={pin.moon_gap.toUpperCase()} />
+                    <Line k="Pin back" v={pin.pin_back_original ? "ORIGINAL" : "REPLACED"} />
+                    <Line k="Posts / chips" v={`${pin.post_straightness.toUpperCase()} · ${pin.enamel_chip_count}`} />
+                    <Text style={s.tapHint}>Tap to update</Text>
+                  </>
+                ) : (
+                  <Text style={s.tapHint}>Not recorded — tap to set moon gap, back, posts, chips</Text>
+                )}
+              </Pressable>
 
-              <View style={s.sec}>
+              <Pressable style={s.sec} onPress={() => router.push(`/provenance/${itemId}`)}>
                 <Text style={s.secLabel}>PROVENANCE</Text>
-                {anchors.length === 0 && sigs.length === 0 && <Line k="No proof attached yet" />}
+                {anchors.length === 0 && sigs.length === 0 && (
+                  <Text style={s.tapHint}>No proof attached — tap to anchor a receipt or badge photo</Text>
+                )}
                 {anchors.map((a) => (
                   <Line
                     key={a.id}
@@ -444,7 +451,8 @@ export default function ItemDetail() {
                 {sigs.map((g) => (
                   <Line key={g.id} k={`Signed — ${g.guest_name}, ${g.convention_name}`} v={g.convention_date} />
                 ))}
-              </View>
+                {(anchors.length > 0 || sigs.length > 0) && <Text style={s.tapHint}>Tap to add more proof</Text>}
+              </Pressable>
 
               <View style={s.sec}>
                 <Text style={s.secLabel}>
@@ -582,6 +590,7 @@ const s = StyleSheet.create({
   line: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 3, gap: 12 },
   lineK: { color: "#4a4230", fontSize: 13, flexShrink: 1 },
   lineV: { color: "#2a2620", fontSize: 12, fontWeight: "600", textAlign: "right" },
+  tapHint: { color: "#9e3b2f", fontSize: 11, marginTop: 6 },
   spark: { flexDirection: "row", alignItems: "flex-end", gap: 3, height: 56 },
   sparkBar: { flex: 1, maxWidth: 14, backgroundColor: T.brassDeep, borderRadius: 1 },
   cardLabel: { fontSize: 9, letterSpacing: 1, color: "#9c9078", marginTop: 12, marginBottom: 5 },

@@ -5,6 +5,8 @@ import {
   FlatList,
   Image,
   Pressable,
+  RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -22,6 +24,14 @@ type Item = {
   purchase_price: string | null;
   trade_stock: boolean;
 };
+
+const SORTS = [
+  { key: "newest", label: "NEWEST" },
+  { key: "oldest", label: "OLDEST" },
+  { key: "name", label: "A–Z" },
+  { key: "value", label: "VALUE" },
+] as const;
+type SortKey = (typeof SORTS)[number]["key"];
 
 function catalogNo(id: number) {
   return `NO. ${String(id).padStart(4, "0")}`;
@@ -46,7 +56,11 @@ function Row({ item, franchise, onOpen }: { item: Item; franchise?: string; onOp
   );
 
   const price = item.purchase_price
-    ? Number(item.purchase_price).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })
+    ? Number(item.purchase_price).toLocaleString("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0,
+      })
     : null;
 
   return (
@@ -74,14 +88,23 @@ export default function Curate() {
   const [items, setItems] = useState<Item[] | null>(null);
   const [franchises, setFranchises] = useState<Record<number, string>>({});
   const [search, setSearch] = useState("");
+  const [franchiseFilter, setFranchiseFilter] = useState<number | null>(null);
+  const [tradeOnly, setTradeOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<SortKey>("newest");
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    const [its, frs] = await Promise.all([
-      api<Item[]>(`/items?limit=500`),
-      api<{ id: number; name: string }[]>(`/franchises`),
-    ]);
-    setItems(its);
-    setFranchises(Object.fromEntries(frs.map((f) => [f.id, f.name])));
+    setRefreshing(true);
+    try {
+      const [its, frs] = await Promise.all([
+        api<Item[]>(`/items?limit=500`),
+        api<{ id: number; name: string }[]>(`/franchises`),
+      ]);
+      setItems(its);
+      setFranchises(Object.fromEntries(frs.map((f) => [f.id, f.name])));
+    } finally {
+      setRefreshing(false);
+    }
   }, []);
 
   useFocusEffect(
@@ -91,9 +114,26 @@ export default function Curate() {
   );
 
   const term = search.trim().toLowerCase();
-  const visible = (items ?? [])
+  const all = items ?? [];
+
+  // Counts come from the whole collection, not the filtered view — the chips
+  // should still tell you what's there while a filter is active.
+  const tradeCount = all.filter((i) => i.trade_stock).length;
+  const franchiseCounts = all.reduce<Record<number, number>>((acc, i) => {
+    if (i.franchise_id != null) acc[i.franchise_id] = (acc[i.franchise_id] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const visible = all
     .filter((i) => (term ? i.name.toLowerCase().includes(term) : true))
-    .sort((a, b) => b.id - a.id);
+    .filter((i) => (franchiseFilter == null ? true : i.franchise_id === franchiseFilter))
+    .filter((i) => (tradeOnly ? i.trade_stock : true))
+    .sort((a, b) => {
+      if (sortBy === "oldest") return a.id - b.id;
+      if (sortBy === "name") return a.name.localeCompare(b.name);
+      if (sortBy === "value") return (Number(b.purchase_price) || 0) - (Number(a.purchase_price) || 0);
+      return b.id - a.id;
+    });
 
   return (
     <View style={{ flex: 1, backgroundColor: T.case }}>
@@ -110,6 +150,54 @@ export default function Curate() {
           <Text style={s.addBtnText}>+ Add</Text>
         </Pressable>
       </View>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={s.filterRow}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Pressable
+          onPress={() => {
+            setFranchiseFilter(null);
+            setTradeOnly(false);
+          }}
+          style={[s.fchip, franchiseFilter == null && !tradeOnly && s.fchipOn]}
+        >
+          <Text style={[s.fchipText, franchiseFilter == null && !tradeOnly && s.fchipTextOn]}>
+            All · {all.length}
+          </Text>
+        </Pressable>
+        {Object.entries(franchiseCounts).map(([fid, count]) => {
+          const id = Number(fid);
+          const on = franchiseFilter === id;
+          return (
+            <Pressable key={fid} onPress={() => setFranchiseFilter(on ? null : id)} style={[s.fchip, on && s.fchipOn]}>
+              <Text style={[s.fchipText, on && s.fchipTextOn]}>
+                {franchises[id] ?? "Unknown"} · {count}
+              </Text>
+            </Pressable>
+          );
+        })}
+        {tradeCount > 0 && (
+          <Pressable onPress={() => setTradeOnly(!tradeOnly)} style={[s.fchip, tradeOnly && s.fchipOn]}>
+            <Text style={[s.fchipText, tradeOnly && s.fchipTextOn]}>Trade stock · {tradeCount}</Text>
+          </Pressable>
+        )}
+      </ScrollView>
+
+      <View style={s.sortRow}>
+        <Text style={s.sortLabel}>SORT</Text>
+        {SORTS.map((so) => (
+          <Pressable key={so.key} onPress={() => setSortBy(so.key)}>
+            <Text style={[s.sortText, sortBy === so.key && s.sortTextOn]}>{so.label}</Text>
+          </Pressable>
+        ))}
+        <Text style={s.showing}>
+          {visible.length}/{all.length}
+        </Text>
+      </View>
+
       {items === null ? (
         <ActivityIndicator color={T.brass} style={{ marginTop: 40 }} />
       ) : (
@@ -118,6 +206,7 @@ export default function Curate() {
           keyExtractor={(i) => String(i.id)}
           contentContainerStyle={{ padding: 14, paddingBottom: 40 }}
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} tintColor={T.brass} />}
           renderItem={({ item }) => (
             <Row
               item={item}
@@ -127,7 +216,7 @@ export default function Curate() {
           )}
           ListEmptyComponent={
             <Text style={s.empty}>
-              {items.length === 0 ? "Nothing catalogued yet." : "No items match that search."}
+              {items.length === 0 ? "Nothing catalogued yet." : "Nothing matches those filters."}
             </Text>
           }
         />
@@ -169,4 +258,14 @@ const s = StyleSheet.create({
   price: { color: T.brassBright, fontSize: 13 },
   trade: { color: T.trade, fontSize: 9, marginTop: 4 },
   empty: { color: T.muted, textAlign: "center", marginTop: 40 },
+  filterRow: { paddingHorizontal: 14, paddingTop: 10, gap: 8, alignItems: "center" },
+  fchip: { borderColor: T.lineWarm, borderWidth: 1, borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },
+  fchipOn: { backgroundColor: T.brass, borderColor: T.brass },
+  fchipText: { color: T.creamDim, fontSize: 12 },
+  fchipTextOn: { color: T.ink, fontWeight: "700" },
+  sortRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingTop: 12, gap: 14 },
+  sortLabel: { color: T.faint, fontSize: 9, letterSpacing: 1 },
+  sortText: { color: T.faint, fontSize: 11, letterSpacing: 0.5 },
+  sortTextOn: { color: T.brassBright, fontWeight: "700" },
+  showing: { color: T.faint, fontSize: 10, marginLeft: "auto" },
 });
