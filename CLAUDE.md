@@ -93,8 +93,12 @@ happened in plain words.
 
 ## Environment facts
 
-- Windows 11, PowerShell primary. `.ps1` scripts may be blocked — the per-window
-  fix is `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`.
+- Windows 11, PowerShell primary. Execution policy is set permanently:
+  `CurrentUser = RemoteSigned` (done 2026-09-04). `npx` works in any window.
+  If it ever regresses, fix it once with
+  `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force`
+  — do NOT hand the owner a per-window `-Scope Process` bypass repeatedly.
+  `npx.cmd` also bypasses the PowerShell script layer entirely.
 - Python venv at `venv/`; `uvicorn` is not on PATH. Use
   `venv\Scripts\python.exe -m uvicorn`.
 - Backend must bind `0.0.0.0` for a phone to reach it.
