@@ -47,6 +47,14 @@ before pinning an SDK, choosing a version, or asserting how a tool behaves.
 Two wrong Expo SDK guesses in a row wasted the owner's time; the answer was one
 search away.
 
+## 5a. The device is authoritative about the device
+
+An error message from the phone beats any web search, changelog, or blog
+post about what version a tool supports. Expo Go on this owner's phone
+reports **SDK 57**; a search claiming the App Store was capped at SDK 54
+sent the project through two wrong downgrades. If the device states a
+version, that is the version.
+
 ## 6. Never run these on this project
 
 - `npm audit fix --force` — it rolled React Native back four major versions and
@@ -90,5 +98,5 @@ happened in plain words.
 - Python venv at `venv/`; `uvicorn` is not on PATH. Use
   `venv\Scripts\python.exe -m uvicorn`.
 - Backend must bind `0.0.0.0` for a phone to reach it.
-- Expo Go from the App Store is pinned to **SDK 54**. The project matches.
+- Expo Go on the owner's phone runs **SDK 57**. The project matches (expo ~57).
 - Inbound firewall rules for ports 8000/8081 require Administrator.
