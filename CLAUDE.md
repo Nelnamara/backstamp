@@ -77,6 +77,11 @@ have predicted.
 If a step needs Administrator or an account only they can create, say so up
 front rather than after it fails.
 
+**Test the exact command yourself first.** The execution-policy failure was
+handed to the owner three times because it was never run here before being
+sent. Running `powershell -Command "<the command>"` from the agent shell takes
+seconds and catches it.
+
 ## 9. Design decisions are the owner's
 
 Do not restyle or restructure a visible surface from your own taste. If a design
@@ -93,12 +98,11 @@ happened in plain words.
 
 ## Environment facts
 
-- Windows 11, PowerShell primary. Execution policy is set permanently:
-  `CurrentUser = RemoteSigned` (done 2026-09-04). `npx` works in any window.
-  If it ever regresses, fix it once with
-  `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force`
-  — do NOT hand the owner a per-window `-Scope Process` bypass repeatedly.
-  `npx.cmd` also bypasses the PowerShell script layer entirely.
+- Windows 11, PowerShell primary. Execution policy set permanently to
+  `CurrentUser = Bypass` (2026-09-04). **`RemoteSigned` is NOT enough** —
+  Node's `npx.ps1` is unsigned, so RemoteSigned still blocks it. Verified by
+  running `npx expo --version` through PowerShell (returned 57.0.22).
+  Never hand the owner a per-window `-Scope Process` bypass; fix it once.
 - Python venv at `venv/`; `uvicorn` is not on PATH. Use
   `venv\Scripts\python.exe -m uvicorn`.
 - Backend must bind `0.0.0.0` for a phone to reach it.
