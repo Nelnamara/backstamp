@@ -107,4 +107,11 @@ happened in plain words.
   `venv\Scripts\python.exe -m uvicorn`.
 - Backend must bind `0.0.0.0` for a phone to reach it.
 - Expo Go on the owner's phone runs **SDK 57**. The project matches (expo ~57).
+- **Expo Go SDK 57 on iOS REQUIRES login** on BOTH the phone app and the CLI.
+  "Just log out of Expo Go" is NOT a workaround — that changed in SDK 57.
+  See https://expo.dev/changelog/expo-go-57-login
+- `expo login -b` / `--sso` CRASHES on this machine: Expo's browser-opener uses
+  `cmd /c start <url>` and the `&` in the OAuth URL breaks it. Use an access
+  token instead: expo.dev > Access tokens, then `$env:EXPO_TOKEN="..."`.
+  The owner signs into Expo with **Google SSO** — there is no password to type.
 - Inbound firewall rules for ports 8000/8081 require Administrator.
